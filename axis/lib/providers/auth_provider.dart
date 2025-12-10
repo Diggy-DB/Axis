@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -86,6 +87,72 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on auth.FirebaseAuthException catch (e) {
       _error = e.message ?? 'Registration failed';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Sign up with detailed information (including onboarding answers)
+  Future<bool> signUpWithDetails({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required DateTime dateOfBirth,
+    required String coreValues,
+    required String worldview,
+    required String ambition,
+  }) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      // Create Firebase Auth account
+      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final fullName = '$firstName $lastName';
+      await credential.user?.updateDisplayName(fullName);
+
+      // Create user document with all details
+      final userDoc = FirebaseFirestore.instance
+          .collection('users')
+          .doc(credential.user!.uid);
+
+      final userData = {
+        'email': email,
+        'displayName': fullName,
+        'firstName': firstName,
+        'lastName': lastName,
+        'dateOfBirth': Timestamp.fromDate(dateOfBirth),
+        'answer1': coreValues,
+        'answer2': worldview,
+        'answer3': ambition,
+        'createdAt': Timestamp.now(),
+        'timezone': DateTime.now().timeZoneName,
+        'preferences': {
+          'theme': 'system',
+          'firstDayOfWeek': 1,
+          'notificationsEnabled': true,
+        },
+      };
+
+      await userDoc.set(userData);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on auth.FirebaseAuthException catch (e) {
+      _error = e.message ?? 'Registration failed';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString();
       _isLoading = false;
       notifyListeners();
       return false;

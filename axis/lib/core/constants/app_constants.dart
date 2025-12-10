@@ -34,20 +34,7 @@ class AppColors {
 
   /// Get color for a life domain
   static Color forDomain(LifeDomain domain) {
-    switch (domain) {
-      case LifeDomain.health:
-        return health;
-      case LifeDomain.wealth:
-        return wealth;
-      case LifeDomain.relationships:
-        return relationships;
-      case LifeDomain.career:
-        return career;
-      case LifeDomain.growth:
-        return growth;
-      case LifeDomain.spirituality:
-        return spirituality;
-    }
+    return Color(domain.colorValue);
   }
 }
 

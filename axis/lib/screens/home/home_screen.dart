@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/habit_provider.dart';
-import '../../providers/task_provider.dart';
-import '../../providers/ai_provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../widgets/home/streaks_section.dart';
 import '../../widgets/home/today_tasks_section.dart';
 import '../../widgets/home/habits_snapshot_section.dart';
-import '../../widgets/home/ai_recommendation_card.dart';
 import '../../widgets/home/mini_calendar_widget.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,14 +19,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
-  }
-
-  void _loadData() {
-    // Load today's recommendation
-    Future.microtask(() {
-      context.read<AIProvider>().loadTodayRecommendation();
-    });
   }
 
   @override
@@ -52,28 +42,59 @@ class _HomeScreenState extends State<HomeScreen> {
               // TODO: Navigate to notifications
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {
-              // TODO: Navigate to settings
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.account_circle_outlined),
+            onSelected: (value) async {
+              if (value == 'logout') {
+                final authProvider = context.read<AuthProvider>();
+                await authProvider.signOut();
+              }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person_outline),
+                    SizedBox(width: 12),
+                    Text('Profile'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings_outlined),
+                    SizedBox(width: 12),
+                    Text('Settings'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.red),
+                    SizedBox(width: 12),
+                    Text('Logout', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
           await context.read<HabitProvider>().refresh();
-          await context.read<AIProvider>().loadTodayRecommendation();
         },
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // AI Recommendation Card
-              const AIRecommendationCard(),
-              const SizedBox(height: AppSpacing.lg),
-
               // Streaks Section
               const StreaksSection(),
               const SizedBox(height: AppSpacing.lg),

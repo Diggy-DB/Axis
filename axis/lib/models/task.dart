@@ -55,7 +55,7 @@ class Task {
       domain: data['domain'] != null
           ? LifeDomain.values.firstWhere(
               (d) => d.name == data['domain'],
-              orElse: () => LifeDomain.career,
+              orElse: () => LifeDomain.workAndCalling,
             )
           : null,
       linkedHabitId: data['linkedHabitId'],

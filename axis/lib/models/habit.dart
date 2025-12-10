@@ -16,6 +16,10 @@ class Habit {
   final bool archived;
   final DateTime createdAt;
   final DateTime updatedAt;
+  // New scheduling fields
+  final DateTime? startTime; // Time of day to start
+  final DateTime? endTime; // Time of day to end
+  final List<int> weekDays; // 1=Monday, 2=Tuesday, ..., 7=Sunday
 
   Habit({
     required this.id,
@@ -32,6 +36,9 @@ class Habit {
     this.archived = false,
     required this.createdAt,
     required this.updatedAt,
+    this.startTime,
+    this.endTime,
+    this.weekDays = const [],
   });
 
   factory Habit.fromFirestore(DocumentSnapshot doc) {
@@ -42,7 +49,7 @@ class Habit {
       description: data['description'] ?? '',
       domain: LifeDomain.values.firstWhere(
         (d) => d.name == data['domain'],
-        orElse: () => LifeDomain.health,
+        orElse: () => LifeDomain.healthAndEnergy,
       ),
       frequency: HabitFrequency.values.firstWhere(
         (f) => f.name == data['frequency'],
@@ -59,6 +66,15 @@ class Habit {
       archived: data['archived'] ?? false,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      startTime: data['startTime'] != null
+          ? (data['startTime'] as Timestamp).toDate()
+          : null,
+      endTime: data['endTime'] != null
+          ? (data['endTime'] as Timestamp).toDate()
+          : null,
+      weekDays: data['weekDays'] != null
+          ? List<int>.from(data['weekDays'])
+          : [],
     );
   }
 
@@ -78,6 +94,9 @@ class Habit {
       'archived': archived,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'startTime': startTime != null ? Timestamp.fromDate(startTime!) : null,
+      'endTime': endTime != null ? Timestamp.fromDate(endTime!) : null,
+      'weekDays': weekDays,
     };
   }
 
@@ -94,6 +113,9 @@ class Habit {
     String? icon,
     bool? archived,
     DateTime? updatedAt,
+    DateTime? startTime,
+    DateTime? endTime,
+    List<int>? weekDays,
   }) {
     return Habit(
       id: id,
@@ -110,6 +132,9 @@ class Habit {
       archived: archived ?? this.archived,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      weekDays: weekDays ?? this.weekDays,
     );
   }
 }

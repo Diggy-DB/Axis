@@ -60,7 +60,7 @@ class AIRecommendation {
       focusArea: data['focusArea'] != null
           ? LifeDomain.values.firstWhere(
               (d) => d.name == data['focusArea'],
-              orElse: () => LifeDomain.health,
+              orElse: () => LifeDomain.healthAndEnergy,
             )
           : null,
       confidence: (data['confidence'] ?? 0.5).toDouble(),

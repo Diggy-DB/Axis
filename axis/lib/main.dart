@@ -6,10 +6,10 @@ import 'app.dart';
 import 'providers/auth_provider.dart';
 import 'providers/habit_provider.dart';
 import 'providers/task_provider.dart';
+import 'providers/schedule_provider.dart';
 import 'providers/reflection_provider.dart';
 import 'providers/calendar_provider.dart';
 import 'providers/theme_provider.dart';
-import 'providers/ai_provider.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -30,21 +30,21 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProxyProvider<AuthProvider, HabitProvider>(
           create: (_) => HabitProvider(),
-          update: (_, auth, previous) => previous!..updateUser(auth.user?.uid),
+          update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
         ),
         ChangeNotifierProxyProvider<AuthProvider, TaskProvider>(
           create: (_) => TaskProvider(),
-          update: (_, auth, previous) => previous!..updateUser(auth.user?.uid),
+          update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, ScheduleProvider>(
+          create: (_) => ScheduleProvider(),
+          update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
         ),
         ChangeNotifierProxyProvider<AuthProvider, ReflectionProvider>(
           create: (_) => ReflectionProvider(),
-          update: (_, auth, previous) => previous!..updateUser(auth.user?.uid),
+          update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
         ),
         ChangeNotifierProvider(create: (_) => CalendarProvider()),
-        ChangeNotifierProxyProvider<AuthProvider, AIProvider>(
-          create: (_) => AIProvider(),
-          update: (_, auth, previous) => previous!..updateUser(auth.user?.uid),
-        ),
       ],
       child: const AxisApp(),
     ),

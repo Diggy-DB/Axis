@@ -1,20 +1,22 @@
 /// Life domains for habit categorization
 enum LifeDomain {
-  health(
-      'Health', 'Mental, emotional, spiritual, and physical well-being', '💚'),
-  wealth('Wealth', 'Financial stability, security, and money mindset', '💰'),
-  relationships('Relationships',
-      'Connections with self, partners, family, and friends', '💖'),
-  career('Career', 'Job, purpose in life, and personal contribution', '💼'),
-  growth('Growth', 'Hobbies, learning, leisure, and self-improvement', '🌱'),
-  spirituality(
-      'Spirituality', 'Purpose, community, higher power, and impact', '✨');
+  soulAndSpirit(
+      'Soul and Spirit', 'Spiritual growth, meditation, and inner peace', '✨', 0xFF9C27B0),
+  healthAndEnergy(
+      'Health and Energy', 'Physical fitness, nutrition, and vitality', '💚', 0xFF4CAF50),
+  familyAndRelationships(
+      'Family and Relationships', 'Connections with loved ones and community', '💖', 0xFFE91E63),
+  workAndCalling(
+      'Work and Calling', 'Career, purpose, and professional growth', '💼', 0xFF2196F3),
+  moneyAndWealth(
+      'Money and Wealth', 'Financial stability, investments, and abundance', '💰', 0xFFFFC107);
 
   final String displayName;
   final String description;
   final String emoji;
+  final int colorValue;
 
-  const LifeDomain(this.displayName, this.description, this.emoji);
+  const LifeDomain(this.displayName, this.description, this.emoji, this.colorValue);
 }
 
 /// Task status
@@ -48,14 +50,14 @@ enum HabitFrequency {
 }
 
 /// Time of day for habit scheduling
-enum TimeOfDay {
+enum HabitTimeOfDay {
   morning('Morning'),
   afternoon('Afternoon'),
   evening('Evening'),
   anytime('Anytime');
 
   final String displayName;
-  const TimeOfDay(this.displayName);
+  const HabitTimeOfDay(this.displayName);
 }
 
 /// Habit log status

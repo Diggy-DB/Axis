@@ -29,10 +29,13 @@ class HabitRepository {
   Stream<List<Habit>> streamHabits() {
     return _habitsCollection
         .where('archived', isEqualTo: false)
-        .orderBy('createdAt', descending: false)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Habit.fromFirestore(doc)).toList());
+        .map((snapshot) {
+      final habits = snapshot.docs.map((doc) => Habit.fromFirestore(doc)).toList();
+      // Sort in memory to avoid composite index requirement
+      habits.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      return habits;
+    });
   }
 
   /// Stream habits by domain
@@ -40,10 +43,13 @@ class HabitRepository {
     return _habitsCollection
         .where('archived', isEqualTo: false)
         .where('domain', isEqualTo: domain.name)
-        .orderBy('createdAt', descending: false)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Habit.fromFirestore(doc)).toList());
+        .map((snapshot) {
+      final habits = snapshot.docs.map((doc) => Habit.fromFirestore(doc)).toList();
+      // Sort in memory to avoid composite index requirement
+      habits.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      return habits;
+    });
   }
 
   /// Get a single habit
