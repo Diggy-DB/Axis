@@ -1,5 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class ActualScheduleEntry {
+  final String activity;
+  final DateTime startTime;
+  final DateTime endTime;
+
+  ActualScheduleEntry({
+    required this.activity,
+    required this.startTime,
+    required this.endTime,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'activity': activity,
+      'startTime': Timestamp.fromDate(startTime),
+      'endTime': Timestamp.fromDate(endTime),
+    };
+  }
+
+  factory ActualScheduleEntry.fromMap(Map<String, dynamic> map) {
+    return ActualScheduleEntry(
+      activity: map['activity'] ?? '',
+      startTime: (map['startTime'] as Timestamp).toDate(),
+      endTime: (map['endTime'] as Timestamp).toDate(),
+    );
+  }
+}
+
 class Reflection {
   final String id;
   final DateTime date; // Normalized to start of day
@@ -10,6 +38,9 @@ class Reflection {
   final String? challenges;
   final String? wins;
   final List<String> tags;
+  final List<String> completedTaskIds; // IDs of tasks completed today
+  final List<ActualScheduleEntry> actualSchedule; // What user actually did
+  final String? aiPromptForNextDay; // AI-generated prompt for next day
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -23,6 +54,9 @@ class Reflection {
     this.challenges,
     this.wins,
     this.tags = const [],
+    this.completedTaskIds = const [],
+    this.actualSchedule = const [],
+    this.aiPromptForNextDay,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -39,6 +73,13 @@ class Reflection {
       challenges: data['challenges'],
       wins: data['wins'],
       tags: List<String>.from(data['tags'] ?? []),
+      completedTaskIds: List<String>.from(data['completedTaskIds'] ?? []),
+      actualSchedule: (data['actualSchedule'] as List<dynamic>?)
+              ?.map(
+                  (e) => ActualScheduleEntry.fromMap(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      aiPromptForNextDay: data['aiPromptForNextDay'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
@@ -54,6 +95,9 @@ class Reflection {
       'challenges': challenges,
       'wins': wins,
       'tags': tags,
+      'completedTaskIds': completedTaskIds,
+      'actualSchedule': actualSchedule.map((e) => e.toMap()).toList(),
+      'aiPromptForNextDay': aiPromptForNextDay,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -73,6 +117,9 @@ class Reflection {
     String? challenges,
     String? wins,
     List<String>? tags,
+    List<String>? completedTaskIds,
+    List<ActualScheduleEntry>? actualSchedule,
+    String? aiPromptForNextDay,
     DateTime? updatedAt,
   }) {
     return Reflection(
@@ -85,6 +132,9 @@ class Reflection {
       challenges: challenges ?? this.challenges,
       wins: wins ?? this.wins,
       tags: tags ?? this.tags,
+      completedTaskIds: completedTaskIds ?? this.completedTaskIds,
+      actualSchedule: actualSchedule ?? this.actualSchedule,
+      aiPromptForNextDay: aiPromptForNextDay ?? this.aiPromptForNextDay,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );

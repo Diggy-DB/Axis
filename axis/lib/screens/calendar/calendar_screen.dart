@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/schedule_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/category_provider.dart';
 import '../../models/schedule.dart';
+import '../../models/category.dart' as models;
 import '../../models/task.dart';
 import '../../models/habit.dart';
 import '../../providers/task_provider.dart';
@@ -23,6 +27,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
     initialPage: DateTime.now().day - 1,
     viewportFraction: 0.15,
   );
+  bool _isRefreshing = false;
+
+  Future<void> _refreshData() async {
+    setState(() => _isRefreshing = true);
+    try {
+      // Force reload by notifying listeners
+      final scheduleProvider =
+          Provider.of<ScheduleProvider>(context, listen: false);
+      final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+      final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+
+      // Providers will automatically refresh via streams
+      await Future.delayed(const Duration(milliseconds: 500));
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -82,175 +105,162 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            // Mini Calendar Carousel
-            SizedBox(
-              height: 80,
-              child: ListView.builder(
-                controller: _pageController,
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: daysInMonth,
-                itemBuilder: (context, index) {
-                  final day = index + 1;
-                  final date = DateTime(now.year, now.month, day);
-                  final isSelected = _selectedDay.day == day &&
-                      _selectedDay.month == now.month &&
-                      _selectedDay.year == now.year;
-                  final isToday = now.day == day;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedDay = date;
-                      });
-                      _pageController.animateToPage(
-                        index,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    child: Container(
-                      width: 60,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color:
-                            isSelected ? theme.primaryColor : theme.cardColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: isToday && !isSelected
-                            ? Border.all(color: theme.primaryColor, width: 2)
-                            : null,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            day.toString(),
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              color: isSelected
-                                  ? Colors.white
-                                  : theme.textTheme.bodyLarge?.color,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            DateFormat('EEE').format(date),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: isSelected
-                                  ? Colors.white70
-                                  : theme.textTheme.bodySmall?.color,
-                            ),
-                          ),
-                        ],
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with refresh button
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Calendar',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Schedule Today Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Schedule Today',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+                    IconButton(
+                      icon: _isRefreshing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.refresh),
+                      onPressed: _isRefreshing ? null : _refreshData,
+                      tooltip: 'Refresh',
+                    ),
+                  ],
                 ),
               ),
-            ),
+              // Mini Calendar Carousel
+              SizedBox(
+                height: 80,
+                child: ListView.builder(
+                  controller: _pageController,
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: daysInMonth,
+                  itemBuilder: (context, index) {
+                    final day = index + 1;
+                    final date = DateTime(now.year, now.month, day);
+                    final isSelected = _selectedDay.day == day &&
+                        _selectedDay.month == now.month &&
+                        _selectedDay.year == now.year;
+                    final isToday = now.day == day;
 
-            const SizedBox(height: 16),
-
-            // Schedules, Tasks, and Habits List
-            Expanded(
-              child: totalItems == 0
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.event_available,
-                            size: 64,
-                            color: theme.disabledColor,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No schedules or habits',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: theme.disabledColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: totalItems,
-                      itemBuilder: (context, index) {
-                        // Show schedules first, then habits, then tasks
-                        if (index < schedulesForDay.length) {
-                          final schedule = schedulesForDay[index];
-                          return _ScheduleCard(
-                            schedule: schedule,
-                            onTap: () =>
-                                _showScheduleDetails(context, schedule),
-                          );
-                        } else if (index <
-                            schedulesForDay.length + habitsForDay.length) {
-                          final habitIndex = index - schedulesForDay.length;
-                          final habit = habitsForDay[habitIndex];
-                          return _HabitCard(
-                            habit: habit,
-                            onTap: () => _showHabitDetails(context, habit),
-                          );
-                        } else {
-                          final taskIndex = index -
-                              schedulesForDay.length -
-                              habitsForDay.length;
-                          final task = tasksForDay[taskIndex];
-                          return _ScheduleTaskCard(
-                            task: task,
-                            onTap: () => _showTaskDetails(context, task),
-                          );
-                        }
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedDay = date;
+                        });
+                        _pageController.animateToPage(
+                          index,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
                       },
-                    ),
-            ),
+                      child: Container(
+                        width: 60,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color:
+                              isSelected ? theme.primaryColor : theme.cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: isToday && !isSelected
+                              ? Border.all(color: theme.primaryColor, width: 2)
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              day.toString(),
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                color: isSelected
+                                    ? Colors.white
+                                    : theme.textTheme.bodyLarge?.color,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              DateFormat('EEE').format(date),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: isSelected
+                                    ? Colors.white70
+                                    : theme.textTheme.bodySmall?.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
 
-            // Set Schedule Button
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () => _showAddTaskDialog(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B9D),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    elevation: 0,
+              const SizedBox(height: 24),
+
+              // Schedule Today Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Schedule Today',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: const Text(
-                    'Set schedule',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Hourly Calendar View
+              Expanded(
+                child: _HourlyCalendarView(
+                  schedulesForDay: schedulesForDay,
+                  habitsForDay: habitsForDay,
+                  tasksForDay: tasksForDay,
+                  selectedDay: _selectedDay,
+                  onScheduleTap: (schedule) =>
+                      _showScheduleDetails(context, schedule),
+                  onHabitTap: (habit) => _showHabitDetails(context, habit),
+                  onTaskTap: (task) => _showTaskDetails(context, task),
+                ),
+              ),
+
+              // Set Schedule Button
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () => _showAddTaskDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B9D),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Set schedule',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -281,21 +291,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
             if (task.scheduledDate != null)
               Row(
                 children: [
-                  const Icon(Icons.access_time, size: 16),
+                  const Icon(Icons.event, size: 16),
                   const SizedBox(width: 8),
-                  Text(DateFormat('h:mm a').format(task.scheduledDate!)),
+                  Text(
+                      'Deadline: ${DateFormat('MMM d, h:mm a').format(task.scheduledDate!)}'),
                 ],
               ),
-            if (task.estimatedMinutes != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.timer, size: 16),
-                  const SizedBox(width: 8),
-                  Text('${task.estimatedMinutes} minutes'),
-                ],
-              ),
-            ],
           ],
         ),
         actions: [
@@ -315,8 +316,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   status: TaskStatus.completed,
                   priority: task.priority,
                   domain: task.domain,
+                  category: task.category,
                   linkedHabitId: task.linkedHabitId,
-                  estimatedMinutes: task.estimatedMinutes,
                   completedAt: DateTime.now(),
                   createdAt: task.createdAt,
                   updatedAt: DateTime.now(),
@@ -715,6 +716,406 @@ class _ScheduleTaskCard extends StatelessWidget {
   }
 }
 
+// Hourly Calendar View Widget
+class _HourlyCalendarView extends StatefulWidget {
+  final List<Schedule> schedulesForDay;
+  final List<Habit> habitsForDay;
+  final List<Task> tasksForDay;
+  final DateTime selectedDay;
+  final Function(Schedule) onScheduleTap;
+  final Function(Habit) onHabitTap;
+  final Function(Task) onTaskTap;
+
+  const _HourlyCalendarView({
+    required this.schedulesForDay,
+    required this.habitsForDay,
+    required this.tasksForDay,
+    required this.selectedDay,
+    required this.onScheduleTap,
+    required this.onHabitTap,
+    required this.onTaskTap,
+  });
+
+  @override
+  State<_HourlyCalendarView> createState() => _HourlyCalendarViewState();
+}
+
+class _HourlyCalendarViewState extends State<_HourlyCalendarView> {
+  final ScrollController _scrollController = ScrollController();
+  static const double hourHeight = 80.0;
+  static const double timeColumnWidth = 60.0;
+  List<Map<String, dynamic>> _categories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToCurrentTime();
+    });
+  }
+
+  Future<void> _loadCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final categoriesJson = prefs.getString('schedule_categories');
+    if (categoriesJson != null) {
+      final List<dynamic> decoded = jsonDecode(categoriesJson);
+      if (mounted) {
+        setState(() {
+          _categories = decoded.map((item) {
+            return {
+              'label': item['label'] as String,
+              'color': Color(item['color'] as int),
+            };
+          }).toList();
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToCurrentTime() {
+    final now = DateTime.now();
+    if (widget.selectedDay.day == now.day &&
+        widget.selectedDay.month == now.month &&
+        widget.selectedDay.year == now.year) {
+      final currentMinutes = now.hour * 60 + now.minute;
+      final scrollPosition = (currentMinutes / 60) * hourHeight - 100;
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          scrollPosition.clamp(0.0, _scrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    final isToday = widget.selectedDay.day == now.day &&
+        widget.selectedDay.month == now.month &&
+        widget.selectedDay.year == now.year;
+
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          controller: _scrollController,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Time labels column
+              SizedBox(
+                width: timeColumnWidth,
+                child: Column(
+                  children: List.generate(24, (hour) {
+                    return SizedBox(
+                      height: hourHeight,
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: Text(
+                          DateFormat('h a').format(DateTime(2000, 1, 1, hour)),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+
+              // Events column
+              Expanded(
+                child: Stack(
+                  children: [
+                    // Hour lines
+                    Column(
+                      children: List.generate(24, (hour) {
+                        return Container(
+                          height: hourHeight,
+                          decoration: BoxDecoration(
+                            border: Border(
+                              top: BorderSide(
+                                color: Colors.grey[300]!,
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+
+                    // Events positioned by time
+                    ..._buildScheduleWidgets(theme),
+                    ..._buildHabitWidgets(theme),
+
+                    // Current time indicator (red line)
+                    if (isToday) _buildCurrentTimeIndicator(now),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildScheduleWidgets(ThemeData theme) {
+    return widget.schedulesForDay.map((schedule) {
+      final startMinutes =
+          schedule.startTime.hour * 60 + schedule.startTime.minute;
+      var endMinutes = schedule.endTime.hour * 60 + schedule.endTime.minute;
+
+      // Handle events that span midnight or have end before start
+      if (endMinutes <= startMinutes) {
+        endMinutes = startMinutes + 60; // Default to 1 hour duration
+      }
+
+      final duration = endMinutes - startMinutes;
+
+      final top = (startMinutes / 60) * hourHeight;
+      final height =
+          ((duration / 60) * hourHeight).clamp(40.0, double.infinity);
+
+      return Positioned(
+        top: top,
+        left: 8,
+        right: 8,
+        child: GestureDetector(
+          onTap: () => widget.onScheduleTap(schedule),
+          child: Container(
+            height: height,
+            margin: const EdgeInsets.only(bottom: 2),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _getScheduleCategoryColor(schedule).withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _getScheduleCategoryColor(schedule),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  schedule.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (height > 40) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${DateFormat('h:mm a').format(schedule.startTime)} - ${DateFormat('h:mm a').format(schedule.endTime)}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+                if (schedule.category != null && height > 50) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      schedule.category!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+                if (schedule.location != null && height > 70) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on,
+                          size: 12, color: Colors.white70),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          schedule.location!,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildHabitWidgets(ThemeData theme) {
+    return widget.habitsForDay
+        .where((habit) => habit.startTime != null)
+        .map((habit) {
+      final startTime = habit.startTime!;
+      final endTime = habit.endTime ?? startTime.add(const Duration(hours: 1));
+
+      final startMinutes = startTime.hour * 60 + startTime.minute;
+      var endMinutes = endTime.hour * 60 + endTime.minute;
+
+      // Handle habits that span midnight or have end before start
+      if (endMinutes <= startMinutes) {
+        endMinutes = startMinutes + 60; // Default to 1 hour duration
+      }
+
+      final duration = endMinutes - startMinutes;
+
+      final top = (startMinutes / 60) * hourHeight;
+      final height =
+          ((duration / 60) * hourHeight).clamp(40.0, double.infinity);
+
+      return Positioned(
+        top: top,
+        left: 8,
+        right: 8,
+        child: GestureDetector(
+          onTap: () => widget.onHabitTap(habit),
+          child: Container(
+            height: height,
+            margin: const EdgeInsets.only(bottom: 2),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Color(habit.domain.colorValue).withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Color(habit.domain.colorValue),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      habit.icon,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        habit.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                if (height > 40) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${DateFormat('h:mm a').format(startTime)} - ${DateFormat('h:mm a').format(endTime)}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
+
+  Widget _buildCurrentTimeIndicator(DateTime now) {
+    final currentMinutes = now.hour * 60 + now.minute;
+    final top = (currentMinutes / 60) * hourHeight;
+
+    return Positioned(
+      top: top,
+      left: 0,
+      right: 0,
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Container(
+              height: 2,
+              color: Colors.red,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getScheduleCategoryColor(Schedule schedule) {
+    if (schedule.category != null) {
+      try {
+        final categoryProvider = context.read<CategoryProvider>();
+        final matchingCategory = categoryProvider.categories.firstWhere(
+          (cat) => cat.label == schedule.category,
+        );
+        return Color(matchingCategory.colorValue);
+      } catch (e) {
+        return const Color(0xFF9E9E9E);
+      }
+    }
+    return const Color(0xFF9E9E9E);
+  }
+
+  Color _getTaskCategoryColor(Task task) {
+    if (task.category != null) {
+      try {
+        final categoryProvider = context.read<CategoryProvider>();
+        final matchingCategory = categoryProvider.categories.firstWhere(
+          (cat) => cat.label == task.category,
+        );
+        return Color(matchingCategory.colorValue);
+      } catch (e) {
+        return const Color(0xFF9E9E9E);
+      }
+    }
+    return const Color(0xFF9E9E9E);
+  }
+}
+
 class _AddTaskScreen extends StatefulWidget {
   final DateTime selectedDay;
 
@@ -734,19 +1135,14 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
   final _locationController = TextEditingController();
   final _noteController = TextEditingController();
 
-  // Categories management
-  final List<Map<String, dynamic>> _categories = [
-    {'label': 'Design', 'color': const Color(0xFFFF6B9D)},
-    {'label': 'Devel', 'color': const Color(0xFFFFB84D)},
-    {'label': 'Activity', 'color': const Color(0xFF6B66FF)},
-    {'label': 'Done', 'color': const Color(0xFF4CAF50)},
-    {'label': 'Research', 'color': const Color(0xFF00BCD4)},
-  ];
-
   @override
   void initState() {
     super.initState();
     _selectedDate = widget.selectedDay;
+    // Load categories from Firestore
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CategoryProvider>().loadCategories();
+    });
   }
 
   @override
@@ -758,6 +1154,7 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
   }
 
   void _showCategoryManagement() {
+    final categoryProvider = context.read<CategoryProvider>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -765,13 +1162,7 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => _CategoryManagementSheet(
-        categories: _categories,
-        onCategoriesChanged: (updated) {
-          setState(() {
-            _categories.clear();
-            _categories.addAll(updated);
-          });
-        },
+        categoryProvider: categoryProvider,
       ),
     );
   }
@@ -996,18 +1387,22 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                ..._categories.map((cat) => _CategoryChip(
-                      label: cat['label'],
-                      color: cat['color'],
-                      isSelected: _selectedCategory == cat['label'],
-                      onTap: () =>
-                          setState(() => _selectedCategory = cat['label']),
-                    )),
-              ],
+            Consumer<CategoryProvider>(
+              builder: (context, categoryProvider, child) {
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    ...categoryProvider.categories.map((cat) => _CategoryChip(
+                          label: cat.label,
+                          color: Color(cat.colorValue),
+                          isSelected: _selectedCategory == cat.label,
+                          onTap: () =>
+                              setState(() => _selectedCategory = cat.label),
+                        )),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 32),
@@ -1207,14 +1602,6 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
   late final TextEditingController _locationController;
   late final TextEditingController _noteController;
 
-  final List<Map<String, dynamic>> _categories = [
-    {'label': 'Design', 'color': const Color(0xFFFF6B9D)},
-    {'label': 'Devel', 'color': const Color(0xFFFFB84D)},
-    {'label': 'Activity', 'color': const Color(0xFF6B66FF)},
-    {'label': 'Done', 'color': const Color(0xFF4CAF50)},
-    {'label': 'Research', 'color': const Color(0xFF00BCD4)},
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -1228,6 +1615,10 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
         TextEditingController(text: widget.schedule.location ?? '');
     _noteController =
         TextEditingController(text: widget.schedule.description ?? '');
+    // Load categories from Firestore
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CategoryProvider>().loadCategories();
+    });
   }
 
   @override
@@ -1239,6 +1630,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
   }
 
   void _showCategoryManagement() {
+    final categoryProvider = context.read<CategoryProvider>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1246,13 +1638,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => _CategoryManagementSheet(
-        categories: _categories,
-        onCategoriesChanged: (updated) {
-          setState(() {
-            _categories.clear();
-            _categories.addAll(updated);
-          });
-        },
+        categoryProvider: categoryProvider,
       ),
     );
   }
@@ -1469,18 +1855,22 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                ..._categories.map((cat) => _CategoryChip(
-                      label: cat['label'],
-                      color: cat['color'],
-                      isSelected: _selectedCategory == cat['label'],
-                      onTap: () =>
-                          setState(() => _selectedCategory = cat['label']),
-                    )),
-              ],
+            Consumer<CategoryProvider>(
+              builder: (context, categoryProvider, child) {
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    ...categoryProvider.categories.map((cat) => _CategoryChip(
+                          label: cat.label,
+                          color: Color(cat.colorValue),
+                          isSelected: _selectedCategory == cat.label,
+                          onTap: () =>
+                              setState(() => _selectedCategory = cat.label),
+                        )),
+                  ],
+                );
+              },
             ),
 
             const SizedBox(height: 32),
@@ -1744,7 +2134,7 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-class _ScheduleCard extends StatelessWidget {
+class _ScheduleCard extends StatefulWidget {
   final Schedule schedule;
   final VoidCallback? onTap;
 
@@ -1753,19 +2143,50 @@ class _ScheduleCard extends StatelessWidget {
     this.onTap,
   });
 
-  Color _getCategoryColor() {
-    switch (schedule.category?.toLowerCase()) {
-      case 'workout':
-        return const Color(0xFFFF6B9D);
-      case 'work':
-        return const Color(0xFF6B66FF);
-      case 'study':
-        return const Color(0xFF4CAF50);
-      case 'personal':
-        return const Color(0xFFFF9800);
-      default:
-        return const Color(0xFF9E9E9E);
+  @override
+  State<_ScheduleCard> createState() => _ScheduleCardState();
+}
+
+class _ScheduleCardState extends State<_ScheduleCard> {
+  List<Map<String, dynamic>> _categories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final categoriesJson = prefs.getString('schedule_categories');
+    if (categoriesJson != null) {
+      final List<dynamic> decoded = jsonDecode(categoriesJson);
+      if (mounted) {
+        setState(() {
+          _categories = decoded
+              .map((item) => {
+                    'label': item['label'] as String,
+                    'color': Color(item['color'] as int),
+                  })
+              .toList();
+        });
+      }
     }
+  }
+
+  Color _getCategoryColor() {
+    if (widget.schedule.category != null) {
+      try {
+        final categoryProvider = context.read<CategoryProvider>();
+        final matchingCategory = categoryProvider.categories.firstWhere(
+          (cat) => cat.label == widget.schedule.category,
+        );
+        return Color(matchingCategory.colorValue);
+      } catch (e) {
+        return const Color(0xFF9E9E9E);
+      }
+    }
+    return const Color(0xFF9E9E9E);
   }
 
   @override
@@ -1781,7 +2202,7 @@ class _ScheduleCard extends StatelessWidget {
         side: BorderSide(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -1797,7 +2218,7 @@ class _ScheduleCard extends StatelessWidget {
                         Icon(Icons.access_time, size: 16, color: color),
                         const SizedBox(width: 4),
                         Text(
-                          '${DateFormat('h:mm a').format(schedule.startTime)} - ${DateFormat('h:mm a').format(schedule.endTime)}',
+                          '${DateFormat('h:mm a').format(widget.schedule.startTime)} - ${DateFormat('h:mm a').format(widget.schedule.endTime)}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: color,
                             fontWeight: FontWeight.w600,
@@ -1807,20 +2228,57 @@ class _ScheduleCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      schedule.title,
+                      widget.schedule.title,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    if (schedule.description != null) ...[
+                    if (widget.schedule.description != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        schedule.description!,
+                        widget.schedule.description!,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.grey[600],
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (widget.schedule.category != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.category,
+                              size: 14, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.schedule.category!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: color,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (widget.schedule.location != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on,
+                              size: 14, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              widget.schedule.location!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -1952,12 +2410,10 @@ class _HabitCard extends StatelessWidget {
 }
 
 class _CategoryManagementSheet extends StatefulWidget {
-  final List<Map<String, dynamic>> categories;
-  final Function(List<Map<String, dynamic>>) onCategoriesChanged;
+  final CategoryProvider categoryProvider;
 
   const _CategoryManagementSheet({
-    required this.categories,
-    required this.onCategoriesChanged,
+    required this.categoryProvider,
   });
 
   @override
@@ -1966,7 +2422,6 @@ class _CategoryManagementSheet extends StatefulWidget {
 }
 
 class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
-  late List<Map<String, dynamic>> _categories;
   final _addCategoryController = TextEditingController();
   Color _selectedColor = const Color(0xFF6B66FF);
 
@@ -1982,106 +2437,98 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _categories = List.from(widget.categories);
-  }
-
-  @override
   void dispose() {
     _addCategoryController.dispose();
     super.dispose();
   }
 
-  void _addCategory() {
+  Future<void> _addCategory() async {
     if (_addCategoryController.text.trim().isEmpty) return;
 
-    setState(() {
-      _categories.add({
-        'label': _addCategoryController.text.trim(),
-        'color': _selectedColor,
-      });
-      _addCategoryController.clear();
-    });
+    await widget.categoryProvider.createCategory(
+      _addCategoryController.text.trim(),
+      _selectedColor.value,
+    );
+    _addCategoryController.clear();
   }
 
-  void _removeCategory(int index) {
-    setState(() {
-      _categories.removeAt(index);
-    });
+  Future<void> _removeCategory(models.Category category) async {
+    await widget.categoryProvider.deleteCategory(category.id);
   }
 
-  void _editCategory(int index) {
-    final category = _categories[index];
-    _addCategoryController.text = category['label'];
-    _selectedColor = category['color'];
+  void _editCategory(models.Category category) {
+    final editController = TextEditingController(text: category.label);
+    Color editColor = Color(category.colorValue);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Category'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _addCategoryController,
-              decoration: const InputDecoration(
-                labelText: 'Category Name',
-                border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Category'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: editController,
+                decoration: const InputDecoration(
+                  labelText: 'Category Name',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text('Select Color'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: _availableColors.map((color) {
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedColor = color),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _selectedColor == color
-                            ? Colors.black
-                            : Colors.transparent,
-                        width: 2,
+              const SizedBox(height: 16),
+              const Text('Select Color'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: _availableColors.map((color) {
+                  return GestureDetector(
+                    onTap: () => setDialogState(() => editColor = color),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: editColor == color
+                              ? Colors.black
+                              : Colors.transparent,
+                          width: 2,
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                editController.dispose();
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (editController.text.trim().isNotEmpty) {
+                  final updatedCategory = models.Category(
+                    id: category.id,
+                    label: editController.text.trim(),
+                    colorValue: editColor.value,
+                    createdAt: category.createdAt,
+                  );
+                  await widget.categoryProvider.updateCategory(updatedCategory);
+                  editController.dispose();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Save'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _addCategoryController.clear();
-              Navigator.pop(context);
-            },
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (_addCategoryController.text.trim().isNotEmpty) {
-                setState(() {
-                  _categories[index] = {
-                    'label': _addCategoryController.text.trim(),
-                    'color': _selectedColor,
-                  };
-                  _addCategoryController.clear();
-                });
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
   }
@@ -2111,10 +2558,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
               ),
               IconButton(
                 icon: const Icon(Icons.close),
-                onPressed: () {
-                  widget.onCategoriesChanged(_categories);
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
@@ -2183,50 +2627,52 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
             ),
           ),
           const SizedBox(height: 12),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 300),
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                return ListTile(
-                  leading: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: category['color'],
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  title: Text(category['label']),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, size: 20),
-                        onPressed: () => _editCategory(index),
+          Consumer<CategoryProvider>(
+            builder: (context, categoryProvider, child) {
+              final categories = categoryProvider.categories;
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    return ListTile(
+                      leading: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Color(category.colorValue),
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, size: 20),
-                        color: Colors.red,
-                        onPressed: () => _removeCategory(index),
+                      title: Text(category.label),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 20),
+                            onPressed: () => _editCategory(category),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, size: 20),
+                            color: Colors.red,
+                            onPressed: () => _removeCategory(category),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                    );
+                  },
+                ),
+              );
+            },
           ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {
-                widget.onCategoriesChanged(_categories);
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6B66FF),
                 foregroundColor: Colors.white,

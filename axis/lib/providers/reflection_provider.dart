@@ -15,6 +15,21 @@ class ReflectionProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  /// Get reflection for a specific date
+  Reflection? getReflectionForDate(DateTime date) {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    try {
+      return _reflections.firstWhere(
+        (r) {
+          final rDate = DateTime(r.date.year, r.date.month, r.date.day);
+          return rDate.isAtSameMomentAs(normalizedDate);
+        },
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
   void updateUser(String? userId) {
     if (userId != null) {
       _repository = ReflectionRepository(userId);

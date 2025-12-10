@@ -8,8 +8,12 @@ import 'providers/habit_provider.dart';
 import 'providers/task_provider.dart';
 import 'providers/schedule_provider.dart';
 import 'providers/reflection_provider.dart';
+import 'providers/daily_summary_provider.dart';
+import 'providers/category_provider.dart';
 import 'providers/calendar_provider.dart';
 import 'providers/theme_provider.dart';
+import 'repositories/daily_summary_repository.dart';
+import 'repositories/category_repository.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -43,6 +47,38 @@ void main() async {
         ChangeNotifierProxyProvider<AuthProvider, ReflectionProvider>(
           create: (_) => ReflectionProvider(),
           update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, DailySummaryProvider>(
+          create: (_) => DailySummaryProvider(
+            repository: DailySummaryRepository(userId: ''),
+          ),
+          update: (_, auth, previous) {
+            if (auth.user?.id != null) {
+              return DailySummaryProvider(
+                repository: DailySummaryRepository(userId: auth.user!.id),
+              );
+            }
+            return previous ??
+                DailySummaryProvider(
+                  repository: DailySummaryRepository(userId: ''),
+                );
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, CategoryProvider>(
+          create: (_) => CategoryProvider(
+            repository: CategoryRepository(userId: ''),
+          ),
+          update: (_, auth, previous) {
+            if (auth.user?.id != null) {
+              return CategoryProvider(
+                repository: CategoryRepository(userId: auth.user!.id),
+              );
+            }
+            return previous ??
+                CategoryProvider(
+                  repository: CategoryRepository(userId: ''),
+                );
+          },
         ),
         ChangeNotifierProvider(create: (_) => CalendarProvider()),
       ],

@@ -10,6 +10,7 @@ class Task {
   final TaskStatus status;
   final TaskPriority priority;
   final LifeDomain? domain;
+  final String? category;
   final String? linkedHabitId;
   final int? estimatedMinutes;
   final DateTime? completedAt;
@@ -25,6 +26,7 @@ class Task {
     required this.status,
     this.priority = TaskPriority.medium,
     this.domain,
+    this.category,
     this.linkedHabitId,
     this.estimatedMinutes,
     this.completedAt,
@@ -58,6 +60,7 @@ class Task {
               orElse: () => LifeDomain.workAndCalling,
             )
           : null,
+      category: data['category'],
       linkedHabitId: data['linkedHabitId'],
       estimatedMinutes: data['estimatedMinutes'],
       completedAt: data['completedAt'] != null
@@ -78,6 +81,7 @@ class Task {
       'status': status.name,
       'priority': priority.name,
       'domain': domain?.name,
+      'category': category,
       'linkedHabitId': linkedHabitId,
       'estimatedMinutes': estimatedMinutes,
       'completedAt':
@@ -116,6 +120,7 @@ class Task {
     TaskStatus? status,
     TaskPriority? priority,
     LifeDomain? domain,
+    String? category,
     String? linkedHabitId,
     int? estimatedMinutes,
     DateTime? completedAt,
@@ -130,6 +135,7 @@ class Task {
       status: status ?? this.status,
       priority: priority ?? this.priority,
       domain: domain ?? this.domain,
+      category: category ?? this.category,
       linkedHabitId: linkedHabitId ?? this.linkedHabitId,
       estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
       completedAt: completedAt ?? this.completedAt,

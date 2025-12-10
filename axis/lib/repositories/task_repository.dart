@@ -115,8 +115,13 @@ class TaskRepository {
 
   /// Create a new task
   Future<String> createTask(Task task) async {
+    print('TaskRepository: Creating task for user: $userId');
+    print('TaskRepository: Task data: ${task.title}');
     final data = task.toFirestore();
+    print('TaskRepository: Firestore data prepared');
     final docRef = await _tasksCollection.add(data);
+    print('TaskRepository: Task created with ID: ${docRef.id}');
+    print('TaskRepository: Full path: users/$userId/tasks/${docRef.id}');
     return docRef.id;
   }
 

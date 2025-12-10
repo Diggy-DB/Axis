@@ -54,8 +54,8 @@ class StreaksSection extends StatelessWidget {
                         '${habit.name}: ${entry.value.currentStreak} days',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      backgroundColor:
-                          AppColors.forDomain(habit.domain).withValues(alpha: 0.1),
+                      backgroundColor: AppColors.forDomain(habit.domain)
+                          .withValues(alpha: 0.1),
                     );
                   }).toList(),
                 ),

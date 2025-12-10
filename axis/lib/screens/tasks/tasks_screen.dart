@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/task_provider.dart';
+import '../../providers/category_provider.dart';
 import '../../models/task.dart';
+import '../../models/category.dart' as models;
 import '../../core/constants/enums.dart';
 
 class TasksScreen extends StatefulWidget {
@@ -15,11 +17,38 @@ class TasksScreen extends StatefulWidget {
 class _TasksScreenState extends State<TasksScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  Future<void> _refreshTasks() async {
+    setState(() => _isRefreshing = true);
+    try {
+      // Providers will automatically refresh via streams
+      await Future.delayed(const Duration(milliseconds: 500));
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
+
+  void _showCategoryManagement() {
+    final categoryProvider = context.read<CategoryProvider>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _CategoryManagementSheet(
+        categoryProvider: categoryProvider,
+      ),
+    );
   }
 
   @override
@@ -34,11 +63,28 @@ class _TasksScreenState extends State<TasksScreen>
       appBar: AppBar(
         title: const Text('Tasks'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.label_outline),
+            onPressed: _showCategoryManagement,
+            tooltip: 'Manage Categories',
+          ),
+          IconButton(
+            icon: _isRefreshing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: _isRefreshing ? null : _refreshTasks,
+            tooltip: 'Refresh',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
             Tab(text: 'Today'),
-            Tab(text: 'Upcoming'),
             Tab(text: 'Completed'),
             Tab(text: 'All'),
           ],
@@ -47,10 +93,9 @@ class _TasksScreenState extends State<TasksScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _TodayTasksView(),
-          _UpcomingTasksView(),
-          _CompletedTasksView(),
-          _AllTasksView(),
+          _TodayTasksView(onRefresh: _refreshTasks),
+          _CompletedTasksView(onRefresh: _refreshTasks),
+          _AllTasksView(onRefresh: _refreshTasks),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -66,7 +111,7 @@ class _TasksScreenState extends State<TasksScreen>
     DateTime? selectedDate;
     TimeOfDay? selectedTime;
     TaskPriority priority = TaskPriority.medium;
-    int estimatedMinutes = 30;
+    String? selectedCategory;
 
     showDialog(
       context: context,
@@ -150,7 +195,7 @@ class _TasksScreenState extends State<TasksScreen>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Date',
+                                      'Deadline Date',
                                       style:
                                           Theme.of(context).textTheme.bodySmall,
                                     ),
@@ -198,7 +243,7 @@ class _TasksScreenState extends State<TasksScreen>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Time',
+                                      'Deadline Time',
                                       style:
                                           Theme.of(context).textTheme.bodySmall,
                                     ),
@@ -215,6 +260,73 @@ class _TasksScreenState extends State<TasksScreen>
                               ],
                             ),
                           ),
+                        ),
+                        const SizedBox(height: 16),
+                        Consumer<CategoryProvider>(
+                          builder: (context, categoryProvider, child) {
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Theme.of(context).dividerColor,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.label, size: 24),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Category',
+                                          style: Theme.of(context).textTheme.bodySmall,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        DropdownButton<String?>(
+                                          value: selectedCategory,
+                                          isExpanded: true,
+                                          underline: const SizedBox(),
+                                          onChanged: (value) {
+                                            setDialogState(() {
+                                              selectedCategory = value;
+                                            });
+                                          },
+                                          items: [
+                                            const DropdownMenuItem<String?>(
+                                              value: null,
+                                              child: Text('No category'),
+                                            ),
+                                            ...categoryProvider.categories.map(
+                                              (category) => DropdownMenuItem<String?>(
+                                                value: category.label,
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      width: 12,
+                                                      height: 12,
+                                                      decoration: BoxDecoration(
+                                                        color: Color(category.colorValue),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(category.label),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 16),
                         Container(
@@ -267,53 +379,6 @@ class _TasksScreenState extends State<TasksScreen>
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        InkWell(
-                          onTap: () async {
-                            final result = await showDialog<int>(
-                              context: context,
-                              builder: (context) => _DurationPicker(
-                                initialMinutes: estimatedMinutes,
-                              ),
-                            );
-                            if (result != null) {
-                              setDialogState(() {
-                                estimatedMinutes = result;
-                              });
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Theme.of(context).dividerColor,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.timer, size: 24),
-                                const SizedBox(width: 16),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Duration',
-                                      style:
-                                          Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '$estimatedMinutes min',
-                                      style:
-                                          Theme.of(context).textTheme.bodyLarge,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -352,16 +417,31 @@ class _TasksScreenState extends State<TasksScreen>
                           dueDate: selectedDate,
                           status: TaskStatus.pending,
                           priority: priority,
-                          estimatedMinutes: estimatedMinutes,
+                          category: selectedCategory,
                           createdAt: DateTime.now(),
                           updatedAt: DateTime.now(),
                         );
 
-                        await Provider.of<TaskProvider>(context, listen: false)
+                        final success = await Provider.of<TaskProvider>(context,
+                                listen: false)
                             .createTask(task);
 
                         if (context.mounted) {
-                          Navigator.pop(context);
+                          if (success) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Task created successfully')),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Failed to create task. Please try again.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       },
                       child: const Text('Add'),
@@ -389,143 +469,120 @@ class _TasksScreenState extends State<TasksScreen>
 }
 
 class _TodayTasksView extends StatelessWidget {
+  final Future<void> Function() onRefresh;
+
+  const _TodayTasksView({required this.onRefresh});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final taskProvider = Provider.of<TaskProvider>(context);
 
-    // Get tasks scheduled for today or tasks from calendar
-    final today = DateTime.now();
-    final allTasks = [
-      ...taskProvider.todayTasks,
-      ...taskProvider.upcomingTasks
-    ];
-    final todayTasks = allTasks.where((task) {
-      if (task.status == TaskStatus.completed) return false;
-      if (task.scheduledDate != null) {
-        return task.scheduledDate!.year == today.year &&
-            task.scheduledDate!.month == today.month &&
-            task.scheduledDate!.day == today.day;
-      }
-      return false;
-    }).toList()
+    // Get all incomplete tasks
+    final allTasks = [...taskProvider.todayTasks, ...taskProvider.upcomingTasks]
+        .where((task) => task.status != TaskStatus.completed)
+        .toList()
       ..sort((a, b) {
-        if (a.scheduledDate == null || b.scheduledDate == null) return 0;
+        if (a.scheduledDate == null && b.scheduledDate == null) return 0;
+        if (a.scheduledDate == null) return 1;
+        if (b.scheduledDate == null) return -1;
         return a.scheduledDate!.compareTo(b.scheduledDate!);
       });
 
-    return todayTasks.isEmpty
-        ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+    // Group tasks by date
+    final Map<DateTime, List<Task>> tasksByDate = {};
+    for (var task in allTasks) {
+      if (task.scheduledDate != null) {
+        final dateKey = DateTime(
+          task.scheduledDate!.year,
+          task.scheduledDate!.month,
+          task.scheduledDate!.day,
+        );
+        tasksByDate.putIfAbsent(dateKey, () => []).add(task);
+      }
+    }
+
+    final sortedDates = tasksByDate.keys.toList()..sort();
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: sortedDates.isEmpty
+          ? ListView(
               children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 64,
-                  color: theme.disabledColor,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No tasks for today',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.disabledColor,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Add tasks from the calendar or create new ones',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.disabledColor,
+                SizedBox(
+                  height: MediaQuery.of(context).size.height - 200,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 64,
+                          color: theme.disabledColor,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No incomplete tasks',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.disabledColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add tasks from the calendar or create new ones',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.disabledColor,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: sortedDates.length,
+              itemBuilder: (context, index) {
+                final date = sortedDates[index];
+                final tasks = tasksByDate[date]!;
+                final isToday = date.year == DateTime.now().year &&
+                    date.month == DateTime.now().month &&
+                    date.day == DateTime.now().day;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (index > 0) const SizedBox(height: 24),
+                    Text(
+                      isToday
+                          ? 'Today - ${DateFormat('MMMM d').format(date)}'
+                          : DateFormat('EEEE, MMMM d').format(date),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '${tasks.length} task${tasks.length == 1 ? '' : 's'}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.secondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...tasks.map((task) => _TaskCard(task: task)),
+                  ],
+                );
+              },
             ),
-          )
-        : ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(
-                DateFormat('EEEE, MMMM d').format(today),
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                '${todayTasks.length} task${todayTasks.length == 1 ? '' : 's'}',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.secondary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ...todayTasks.map((task) => _TaskCard(task: task)),
-            ],
-          );
-  }
-}
-
-class _UpcomingTasksView extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final taskProvider = Provider.of<TaskProvider>(context);
-
-    final today = DateTime.now();
-    final allTasks = [
-      ...taskProvider.todayTasks,
-      ...taskProvider.upcomingTasks
-    ];
-    final upcomingTasks = allTasks.where((task) {
-      if (task.status == TaskStatus.completed) return false;
-      if (task.scheduledDate != null) {
-        return task.scheduledDate!.isAfter(
-          DateTime(today.year, today.month, today.day, 23, 59),
-        );
-      }
-      if (task.dueDate != null) {
-        return task.dueDate!.isAfter(
-          DateTime(today.year, today.month, today.day, 23, 59),
-        );
-      }
-      return false;
-    }).toList()
-      ..sort((a, b) {
-        final aDate = a.scheduledDate ?? a.dueDate;
-        final bDate = b.scheduledDate ?? b.dueDate;
-        if (aDate == null || bDate == null) return 0;
-        return aDate.compareTo(bDate);
-      });
-
-    if (upcomingTasks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.event_available,
-              size: 64,
-              color: theme.disabledColor,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No upcoming tasks',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.disabledColor,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: upcomingTasks.length,
-      itemBuilder: (context, index) => _TaskCard(task: upcomingTasks[index]),
     );
   }
 }
 
 class _CompletedTasksView extends StatelessWidget {
+  final Future<void> Function() onRefresh;
+
+  const _CompletedTasksView({required this.onRefresh});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -542,37 +599,50 @@ class _CompletedTasksView extends StatelessWidget {
             return b.completedAt!.compareTo(a.completedAt!);
           });
 
-    if (completedTasks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inbox,
-              size: 64,
-              color: theme.disabledColor,
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: completedTasks.isEmpty
+          ? ListView(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height - 200,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inbox,
+                          size: 64,
+                          color: theme.disabledColor,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No completed tasks',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.disabledColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: completedTasks.length,
+              itemBuilder: (context, index) =>
+                  _TaskCard(task: completedTasks[index]),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'No completed tasks',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.disabledColor,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: completedTasks.length,
-      itemBuilder: (context, index) => _TaskCard(task: completedTasks[index]),
     );
   }
 }
 
 class _AllTasksView extends StatelessWidget {
+  final Future<void> Function() onRefresh;
+
+  const _AllTasksView({required this.onRefresh});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -590,39 +660,47 @@ class _AllTasksView extends StatelessWidget {
         return aDate.compareTo(bDate);
       });
 
-    if (allTasks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.assignment,
-              size: 64,
-              color: theme.disabledColor,
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: allTasks.isEmpty
+          ? ListView(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height - 200,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.assignment,
+                          size: 64,
+                          color: theme.disabledColor,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No tasks yet',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.disabledColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tap the + button to create your first task',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.disabledColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: allTasks.length,
+              itemBuilder: (context, index) => _TaskCard(task: allTasks[index]),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'No tasks yet',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.disabledColor,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Tap the + button to create your first task',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.disabledColor,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: allTasks.length,
-      itemBuilder: (context, index) => _TaskCard(task: allTasks[index]),
     );
   }
 }
@@ -663,7 +741,7 @@ class _TaskCard extends StatelessWidget {
                     priority: task.priority,
                     domain: task.domain,
                     linkedHabitId: task.linkedHabitId,
-                    estimatedMinutes: task.estimatedMinutes,
+                    category: task.category,
                     completedAt: value == true ? DateTime.now() : null,
                     createdAt: task.createdAt,
                     updatedAt: DateTime.now(),
@@ -703,6 +781,51 @@ class _TaskCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Row(
                       children: [
+                        if (task.category != null) ...[
+                          Consumer<CategoryProvider>(
+                            builder: (context, categoryProvider, child) {
+                              final category = categoryProvider.categories
+                                  .where((cat) => cat.label == task.category)
+                                  .firstOrNull;
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: category != null
+                                      ? Color(category.colorValue).withValues(alpha: 0.2)
+                                      : Theme.of(context).colorScheme.secondary.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: category != null
+                                            ? Color(category.colorValue)
+                                            : Theme.of(context).colorScheme.secondary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      task.category!,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         if (task.scheduledDate != null) ...[
                           Icon(
                             Icons.access_time,
@@ -726,21 +849,6 @@ class _TaskCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             DateFormat('MMM d').format(task.dueDate!),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.secondary,
-                            ),
-                          ),
-                        ],
-                        if (task.estimatedMinutes != null) ...[
-                          const SizedBox(width: 12),
-                          Icon(
-                            Icons.timer,
-                            size: 14,
-                            color: theme.colorScheme.secondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${task.estimatedMinutes} min',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.secondary,
                             ),
@@ -796,28 +904,78 @@ class _TaskCard extends StatelessWidget {
               ],
               if (task.scheduledDate != null)
                 _DetailRow(
-                  icon: Icons.access_time,
-                  label: 'Scheduled',
+                  icon: Icons.event,
+                  label: 'Deadline',
                   value: DateFormat('MMM d, y \'at\' h:mm a')
                       .format(task.scheduledDate!),
                 ),
-              if (task.dueDate != null)
+              if (task.dueDate != null && task.scheduledDate == null)
                 _DetailRow(
                   icon: Icons.event,
-                  label: 'Due date',
+                  label: 'Deadline',
                   value: DateFormat('MMM d, y').format(task.dueDate!),
-                ),
-              if (task.estimatedMinutes != null)
-                _DetailRow(
-                  icon: Icons.timer,
-                  label: 'Duration',
-                  value: '${task.estimatedMinutes} minutes',
                 ),
               _DetailRow(
                 icon: Icons.flag,
                 label: 'Priority',
                 value: task.priority.name.toUpperCase(),
               ),
+              if (task.category != null)
+                Consumer<CategoryProvider>(
+                  builder: (context, categoryProvider, child) {
+                    final category = categoryProvider.categories
+                        .where((cat) => cat.label == task.category)
+                        .firstOrNull;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.label,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.secondary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Category',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context).disabledColor,
+                                      ),
+                                ),
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 12,
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        color: category != null
+                                            ? Color(category.colorValue)
+                                            : const Color(0xFF9E9E9E),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      task.category!,
+                                      style:
+                                          Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               if (task.completedAt != null)
                 _DetailRow(
                   icon: Icons.check_circle,
@@ -855,7 +1013,7 @@ class _TaskCard extends StatelessWidget {
                   priority: task.priority,
                   domain: task.domain,
                   linkedHabitId: task.linkedHabitId,
-                  estimatedMinutes: task.estimatedMinutes,
+                  category: task.category,
                   completedAt: DateTime.now(),
                   createdAt: task.createdAt,
                   updatedAt: DateTime.now(),
@@ -917,74 +1075,281 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _DurationPicker extends StatefulWidget {
-  final int initialMinutes;
+class _CategoryManagementSheet extends StatefulWidget {
+  final CategoryProvider categoryProvider;
 
-  const _DurationPicker({required this.initialMinutes});
+  const _CategoryManagementSheet({
+    required this.categoryProvider,
+  });
 
   @override
-  State<_DurationPicker> createState() => _DurationPickerState();
+  State<_CategoryManagementSheet> createState() =>
+      _CategoryManagementSheetState();
 }
 
-class _DurationPickerState extends State<_DurationPicker> {
-  late int _minutes;
+class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
+  final _addCategoryController = TextEditingController();
+  Color _selectedColor = const Color(0xFF6B66FF);
+
+  final List<Color> _availableColors = [
+    const Color(0xFFFF6B9D),
+    const Color(0xFFFFB84D),
+    const Color(0xFF6B66FF),
+    const Color(0xFF4CAF50),
+    const Color(0xFF00BCD4),
+    const Color(0xFFE91E63),
+    const Color(0xFF9C27B0),
+    const Color(0xFFFF5722),
+  ];
 
   @override
-  void initState() {
-    super.initState();
-    _minutes = widget.initialMinutes;
+  void dispose() {
+    _addCategoryController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addCategory() async {
+    if (_addCategoryController.text.trim().isEmpty) return;
+
+    await widget.categoryProvider.createCategory(
+      _addCategoryController.text.trim(),
+      _selectedColor.value,
+    );
+    _addCategoryController.clear();
+  }
+
+  Future<void> _removeCategory(models.Category category) async {
+    await widget.categoryProvider.deleteCategory(category.id);
+  }
+
+  void _editCategory(models.Category category) {
+    final editController = TextEditingController(text: category.label);
+    Color editColor = Color(category.colorValue);
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Category'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: editController,
+                decoration: const InputDecoration(
+                  labelText: 'Category Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Select Color'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: _availableColors.map((color) {
+                  return GestureDetector(
+                    onTap: () => setDialogState(() => editColor = color),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: editColor == color
+                              ? Colors.black
+                              : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                editController.dispose();
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (editController.text.trim().isNotEmpty) {
+                  final updatedCategory = models.Category(
+                    id: category.id,
+                    label: editController.text.trim(),
+                    colorValue: editColor.value,
+                    createdAt: category.createdAt,
+                  );
+                  await widget.categoryProvider.updateCategory(updatedCategory);
+                  editController.dispose();
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Select Duration',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Manage Categories',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Add New Category
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _addCategoryController,
+                  decoration: InputDecoration(
+                    hintText: 'New category name',
+                    filled: true,
+                    fillColor: const Color(0xFFF5F5F5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              '$_minutes minutes',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 24),
-            Slider(
-              value: _minutes.toDouble(),
-              min: 15,
-              max: 240,
-              divisions: 15,
-              label: '$_minutes min',
-              onChanged: (value) {
-                setState(() {
-                  _minutes = value.toInt();
-                });
-              },
-            ),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
                 ),
-                const SizedBox(width: 12),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, _minutes),
-                  child: const Text('OK'),
+              ),
+              const SizedBox(width: 8),
+              PopupMenuButton<Color>(
+                icon: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _selectedColor,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ],
+                itemBuilder: (context) => _availableColors
+                    .map((color) => PopupMenuItem(
+                          value: color,
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ))
+                    .toList(),
+                onSelected: (color) {
+                  setState(() => _selectedColor = color);
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.add_circle),
+                color: const Color(0xFF6B66FF),
+                iconSize: 32,
+                onPressed: _addCategory,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Category List
+          const Text(
+            'Your Categories',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          Consumer<CategoryProvider>(
+            builder: (context, categoryProvider, child) {
+              final categories = categoryProvider.categories;
+              return ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    return ListTile(
+                      leading: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Color(category.colorValue),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      title: Text(category.label),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 20),
+                            onPressed: () => _editCategory(category),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, size: 20),
+                            color: Colors.red,
+                            onPressed: () => _removeCategory(category),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6B66FF),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              child: const Text('Done'),
+            ),
+          ),
+        ],
       ),
     );
   }

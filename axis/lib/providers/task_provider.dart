@@ -15,6 +15,22 @@ class TaskProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  /// Get tasks for a specific date
+  List<Task> getTasksForDate(DateTime date) {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    final allTasks = [..._todayTasks, ..._upcomingTasks];
+
+    return allTasks.where((task) {
+      if (task.scheduledDate == null) return false;
+      final taskDate = DateTime(
+        task.scheduledDate!.year,
+        task.scheduledDate!.month,
+        task.scheduledDate!.day,
+      );
+      return taskDate.isAtSameMomentAs(normalizedDate);
+    }).toList();
+  }
+
   void updateUser(String? userId) {
     if (userId != null) {
       _repository = TaskRepository(userId);
@@ -42,11 +58,19 @@ class TaskProvider extends ChangeNotifier {
   }
 
   Future<bool> createTask(Task task) async {
-    if (_repository == null) return false;
+    if (_repository == null) {
+      print('TaskProvider: Repository is null - user not authenticated');
+      _error = 'User not authenticated';
+      notifyListeners();
+      return false;
+    }
     try {
-      await _repository!.createTask(task);
+      print('TaskProvider: Creating task: ${task.title}');
+      final taskId = await _repository!.createTask(task);
+      print('TaskProvider: Task created successfully with ID: $taskId');
       return true;
     } catch (e) {
+      print('TaskProvider: Error creating task: $e');
       _error = 'Failed to create task: $e';
       notifyListeners();
       return false;

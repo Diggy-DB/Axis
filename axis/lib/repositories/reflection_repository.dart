@@ -149,7 +149,8 @@ class ReflectionRepository {
 
     if (reflections.isEmpty) return null;
 
-    final totalEnergy = reflections.fold<int>(0, (total, r) => total + r.energy!);
+    final totalEnergy =
+        reflections.fold<int>(0, (total, r) => total + r.energy!);
     return totalEnergy / reflections.length;
   }
 
