@@ -2447,7 +2447,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
 
     await widget.categoryProvider.createCategory(
       _addCategoryController.text.trim(),
-      _selectedColor.value,
+      _selectedColor.toARGB32(),
     );
     _addCategoryController.clear();
   }
@@ -2517,7 +2517,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
                   final updatedCategory = models.Category(
                     id: category.id,
                     label: editController.text.trim(),
-                    colorValue: editColor.value,
+                    colorValue: editColor.toARGB32(),
                     createdAt: category.createdAt,
                   );
                   await widget.categoryProvider.updateCategory(updatedCategory);
