@@ -1,22 +1,23 @@
 /// Life domains for habit categorization
 enum LifeDomain {
-  soulAndSpirit(
-      'Soul and Spirit', 'Spiritual growth, meditation, and inner peace', '✨', 0xFF9C27B0),
-  healthAndEnergy(
-      'Health and Energy', 'Physical fitness, nutrition, and vitality', '💚', 0xFF4CAF50),
-  familyAndRelationships(
-      'Family and Relationships', 'Connections with loved ones and community', '💖', 0xFFE91E63),
-  workAndCalling(
-      'Work and Calling', 'Career, purpose, and professional growth', '💼', 0xFF2196F3),
-  moneyAndWealth(
-      'Money and Wealth', 'Financial stability, investments, and abundance', '💰', 0xFFFFC107);
+  soulAndSpirit('Soul and Spirit',
+      'Spiritual growth, meditation, and inner peace', '✨', 0xFF9C27B0),
+  healthAndEnergy('Health and Energy',
+      'Physical fitness, nutrition, and vitality', '💚', 0xFF4CAF50),
+  familyAndRelationships('Family and Relationships',
+      'Connections with loved ones and community', '💖', 0xFFE91E63),
+  workAndCalling('Work and Calling', 'Career, purpose, and professional growth',
+      '💼', 0xFF2196F3),
+  moneyAndWealth('Money and Wealth',
+      'Financial stability, investments, and abundance', '💰', 0xFFFFC107);
 
   final String displayName;
   final String description;
   final String emoji;
   final int colorValue;
 
-  const LifeDomain(this.displayName, this.description, this.emoji, this.colorValue);
+  const LifeDomain(
+      this.displayName, this.description, this.emoji, this.colorValue);
 }
 
 /// Task status

@@ -23,8 +23,7 @@ class OnboardingQuestionsScreen extends StatefulWidget {
       _OnboardingQuestionsScreenState();
 }
 
-class _OnboardingQuestionsScreenState
-    extends State<OnboardingQuestionsScreen> {
+class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -154,7 +153,8 @@ class _OnboardingQuestionsScreenState
                   controller: _answer2Controller,
                 ),
                 _buildQuestionPage(
-                  question: 'What is your ambition?\nWhat role do you want to play in the future?',
+                  question:
+                      'What is your ambition?\nWhat role do you want to play in the future?',
                   description:
                       'Describe your future aspirations and the role you envision for yourself. What impact do you want to make?',
                   controller: _answer3Controller,

@@ -44,8 +44,8 @@ class UserModel {
       preferences: UserPreferences.fromMap(data['preferences'] ?? {}),
       firstName: data['firstName'],
       lastName: data['lastName'],
-      dateOfBirth: data['dateOfBirth'] != null 
-          ? (data['dateOfBirth'] as Timestamp).toDate() 
+      dateOfBirth: data['dateOfBirth'] != null
+          ? (data['dateOfBirth'] as Timestamp).toDate()
           : null,
       coreValues: data['answer1'],
       worldview: data['answer2'],
@@ -63,7 +63,8 @@ class UserModel {
       'preferences': preferences.toMap(),
       'firstName': firstName,
       'lastName': lastName,
-      'dateOfBirth': dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
+      'dateOfBirth':
+          dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
       'answer1': coreValues,
       'answer2': worldview,
       'answer3': ambition,

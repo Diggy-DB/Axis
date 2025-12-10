@@ -16,36 +16,39 @@ class ScheduleRepository {
   Future<String> createSchedule(Schedule schedule) async {
     try {
       // For recurring schedules, use the base schedule's ID as recurrenceId
-      final recurrenceId = (schedule.recurrence != null && schedule.recurrence != 'none') 
-          ? _schedulesCollection.doc().id 
-          : null;
-      
+      final recurrenceId =
+          (schedule.recurrence != null && schedule.recurrence != 'none')
+              ? _schedulesCollection.doc().id
+              : null;
+
       final scheduleWithRecurrenceId = schedule.copyWith(
         recurrenceId: recurrenceId,
       );
-      
+
       final data = scheduleWithRecurrenceId.toFirestore();
       final docRef = await _schedulesCollection.add(data);
-      
+
       // If schedule has recurrence, create future occurrences
       if (schedule.recurrence != null && schedule.recurrence != 'none') {
-        await _createRecurringSchedules(scheduleWithRecurrenceId, recurrenceId!);
+        await _createRecurringSchedules(
+            scheduleWithRecurrenceId, recurrenceId!);
       }
-      
+
       return docRef.id;
     } catch (e) {
       throw Exception('Failed to create schedule: $e');
     }
   }
-  
+
   /// Create recurring schedules based on recurrence pattern
-  Future<void> _createRecurringSchedules(Schedule schedule, String recurrenceId) async {
+  Future<void> _createRecurringSchedules(
+      Schedule schedule, String recurrenceId) async {
     final recurrence = schedule.recurrence;
-    
+
     if (recurrence == null || recurrence == 'none') {
       return;
     }
-    
+
     // Determine number of occurrences based on recurrence type
     int occurrences;
     switch (recurrence) {
@@ -64,10 +67,10 @@ class ScheduleRepository {
       default:
         return;
     }
-    
+
     for (int i = 1; i <= occurrences; i++) {
       DateTime nextDate;
-      
+
       switch (recurrence) {
         case 'daily':
           nextDate = schedule.scheduledDate.add(Duration(days: i));
@@ -89,7 +92,7 @@ class ScheduleRepository {
         default:
           return;
       }
-      
+
       // Calculate new start and end times
       final duration = schedule.endTime.difference(schedule.startTime);
       final newStartTime = DateTime(
@@ -100,7 +103,7 @@ class ScheduleRepository {
         schedule.startTime.minute,
       );
       final newEndTime = newStartTime.add(duration);
-      
+
       // Create recurring schedule instance with same recurrenceId
       final recurringSchedule = Schedule(
         id: '',
@@ -117,7 +120,7 @@ class ScheduleRepository {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      
+
       await _schedulesCollection.add(recurringSchedule.toFirestore());
     }
   }
@@ -145,18 +148,21 @@ class ScheduleRepository {
       // Get all schedules in this recurrence group that are on or after this date
       final snapshot = await _schedulesCollection
           .where('recurrenceId', isEqualTo: schedule.recurrenceId)
-          .where('scheduledDate', 
-                 isGreaterThanOrEqualTo: Timestamp.fromDate(schedule.scheduledDate))
+          .where('scheduledDate',
+              isGreaterThanOrEqualTo:
+                  Timestamp.fromDate(schedule.scheduledDate))
           .get();
 
       // Update all matching schedules
       final batch = FirebaseFirestore.instance.batch();
       for (final doc in snapshot.docs) {
         final existingSchedule = Schedule.fromFirestore(doc);
-        
+
         // Calculate the time difference for future occurrences
-        final daysDiff = existingSchedule.scheduledDate.difference(schedule.scheduledDate).inDays;
-        
+        final daysDiff = existingSchedule.scheduledDate
+            .difference(schedule.scheduledDate)
+            .inDays;
+
         final updatedSchedule = existingSchedule.copyWith(
           title: schedule.title,
           description: schedule.description,
@@ -166,10 +172,10 @@ class ScheduleRepository {
           endTime: schedule.endTime.add(Duration(days: daysDiff)),
           updatedAt: DateTime.now(),
         );
-        
+
         batch.update(doc.reference, updatedSchedule.toFirestore());
       }
-      
+
       await batch.commit();
     } catch (e) {
       throw Exception('Failed to update schedule series: $e');
@@ -197,8 +203,9 @@ class ScheduleRepository {
       // Get all schedules in this recurrence group that are on or after this date
       final snapshot = await _schedulesCollection
           .where('recurrenceId', isEqualTo: schedule.recurrenceId)
-          .where('scheduledDate', 
-                 isGreaterThanOrEqualTo: Timestamp.fromDate(schedule.scheduledDate))
+          .where('scheduledDate',
+              isGreaterThanOrEqualTo:
+                  Timestamp.fromDate(schedule.scheduledDate))
           .get();
 
       // Delete all matching schedules
@@ -206,7 +213,7 @@ class ScheduleRepository {
       for (final doc in snapshot.docs) {
         batch.delete(doc.reference);
       }
-      
+
       await batch.commit();
     } catch (e) {
       throw Exception('Failed to delete schedule series: $e');
@@ -329,8 +336,8 @@ class ScheduleRepository {
       final Map<String, List<Schedule>> recurrenceGroups = {};
       for (final doc in snapshot.docs) {
         final schedule = Schedule.fromFirestore(doc);
-        if (schedule.recurrence != null && 
-            schedule.recurrence != 'none' && 
+        if (schedule.recurrence != null &&
+            schedule.recurrence != 'none' &&
             schedule.recurrenceId != null) {
           recurrenceGroups.putIfAbsent(schedule.recurrenceId!, () => []);
           recurrenceGroups[schedule.recurrenceId!]!.add(schedule);
@@ -339,12 +346,13 @@ class ScheduleRepository {
 
       // For each recurrence group, check if we need to generate more
       final now = DateTime.now();
-      final regenerationThreshold = now.add(const Duration(days: 14)); // 2 weeks ahead
+      final regenerationThreshold =
+          now.add(const Duration(days: 14)); // 2 weeks ahead
 
       for (final entry in recurrenceGroups.entries) {
         final recurrenceId = entry.key;
         final schedules = entry.value;
-        
+
         if (schedules.isEmpty) continue;
 
         // Find the last occurrence

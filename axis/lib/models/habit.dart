@@ -72,9 +72,8 @@ class Habit {
       endTime: data['endTime'] != null
           ? (data['endTime'] as Timestamp).toDate()
           : null,
-      weekDays: data['weekDays'] != null
-          ? List<int>.from(data['weekDays'])
-          : [],
+      weekDays:
+          data['weekDays'] != null ? List<int>.from(data['weekDays']) : [],
     );
   }
 

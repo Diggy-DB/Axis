@@ -31,7 +31,8 @@ class HabitRepository {
         .where('archived', isEqualTo: false)
         .snapshots()
         .map((snapshot) {
-      final habits = snapshot.docs.map((doc) => Habit.fromFirestore(doc)).toList();
+      final habits =
+          snapshot.docs.map((doc) => Habit.fromFirestore(doc)).toList();
       // Sort in memory to avoid composite index requirement
       habits.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       return habits;
@@ -45,7 +46,8 @@ class HabitRepository {
         .where('domain', isEqualTo: domain.name)
         .snapshots()
         .map((snapshot) {
-      final habits = snapshot.docs.map((doc) => Habit.fromFirestore(doc)).toList();
+      final habits =
+          snapshot.docs.map((doc) => Habit.fromFirestore(doc)).toList();
       // Sort in memory to avoid composite index requirement
       habits.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       return habits;

@@ -65,7 +65,8 @@ class _HabitsScreenState extends State<HabitsScreen> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.refresh),
                         onPressed: _isRefreshing ? null : _refreshHabits,
@@ -275,7 +276,8 @@ class _HabitCard extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              final provider = Provider.of<HabitProvider>(context, listen: false);
+              final provider =
+                  Provider.of<HabitProvider>(context, listen: false);
               await provider.deleteHabit(habit.id);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -413,7 +415,7 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
   final Set<int> _selectedDays = {};
@@ -787,7 +789,7 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
-  
+
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   late final Set<int> _selectedDays;
@@ -797,20 +799,21 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.habit.name);
-    _descriptionController = TextEditingController(text: widget.habit.description);
-    
+    _descriptionController =
+        TextEditingController(text: widget.habit.description);
+
     if (widget.habit.startTime != null) {
       _startTime = TimeOfDay.fromDateTime(widget.habit.startTime!);
     } else {
       _startTime = const TimeOfDay(hour: 9, minute: 0);
     }
-    
+
     if (widget.habit.endTime != null) {
       _endTime = TimeOfDay.fromDateTime(widget.habit.endTime!);
     } else {
       _endTime = const TimeOfDay(hour: 10, minute: 0);
     }
-    
+
     _selectedDays = Set<int>.from(widget.habit.weekDays);
   }
 

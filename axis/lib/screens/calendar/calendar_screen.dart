@@ -74,7 +74,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       });
 
     // Combine schedules, tasks, and habits
-    final totalItems = schedulesForDay.length + tasksForDay.length + habitsForDay.length;
+    final totalItems =
+        schedulesForDay.length + tasksForDay.length + habitsForDay.length;
 
     // Get current month days
     final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
@@ -201,7 +202,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             onTap: () =>
                                 _showScheduleDetails(context, schedule),
                           );
-                        } else if (index < schedulesForDay.length + habitsForDay.length) {
+                        } else if (index <
+                            schedulesForDay.length + habitsForDay.length) {
                           final habitIndex = index - schedulesForDay.length;
                           final habit = habitsForDay[habitIndex];
                           return _HabitCard(
@@ -209,7 +211,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             onTap: () => _showHabitDetails(context, habit),
                           );
                         } else {
-                          final taskIndex = index - schedulesForDay.length - habitsForDay.length;
+                          final taskIndex = index -
+                              schedulesForDay.length -
+                              habitsForDay.length;
                           final task = tasksForDay[taskIndex];
                           return _ScheduleTaskCard(
                             task: task,
@@ -332,8 +336,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   void _showHabitDetails(BuildContext context, Habit habit) {
     final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final repeatDays = habit.weekDays.map((day) => dayNames[day - 1]).join(', ');
-    
+    final repeatDays =
+        habit.weekDays.map((day) => dayNames[day - 1]).join(', ');
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -457,8 +462,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 children: [
                   const Icon(Icons.repeat, size: 16),
                   const SizedBox(width: 8),
-                  Text(schedule.recurrence!.substring(0, 1).toUpperCase() + 
-                       schedule.recurrence!.substring(1)),
+                  Text(schedule.recurrence!.substring(0, 1).toUpperCase() +
+                      schedule.recurrence!.substring(1)),
                 ],
               ),
             ],
@@ -472,14 +477,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              
+
               // If it's a recurring schedule, ask which ones to edit
               if (schedule.recurrenceId != null) {
                 final choice = await showDialog<String>(
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Edit Recurring Schedule'),
-                    content: const Text('Which schedules would you like to edit?'),
+                    content:
+                        const Text('Which schedules would you like to edit?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, 'cancel'),
@@ -533,7 +539,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete Recurring Schedule'),
-                    content: const Text('Which schedules would you like to delete?'),
+                    content:
+                        const Text('Which schedules would you like to delete?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, 'cancel'),
@@ -541,12 +548,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(context, 'this'),
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        style:
+                            TextButton.styleFrom(foregroundColor: Colors.red),
                         child: const Text('Just this schedule'),
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(context, 'future'),
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        style:
+                            TextButton.styleFrom(foregroundColor: Colors.red),
                         child: const Text('This and future schedules'),
                       ),
                     ],
@@ -581,7 +590,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        style:
+                            TextButton.styleFrom(foregroundColor: Colors.red),
                         child: const Text('Delete'),
                       ),
                     ],
@@ -723,7 +733,7 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
   final _nameController = TextEditingController();
   final _locationController = TextEditingController();
   final _noteController = TextEditingController();
-  
+
   // Categories management
   final List<Map<String, dynamic>> _categories = [
     {'label': 'Design', 'color': const Color(0xFFFF6B9D)},
@@ -746,7 +756,7 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
     _noteController.dispose();
     super.dispose();
   }
-  
+
   void _showCategoryManagement() {
     showModalBottomSheet(
       context: context,
@@ -994,7 +1004,8 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                       label: cat['label'],
                       color: cat['color'],
                       isSelected: _selectedCategory == cat['label'],
-                      onTap: () => setState(() => _selectedCategory = cat['label']),
+                      onTap: () =>
+                          setState(() => _selectedCategory = cat['label']),
                     )),
               ],
             ),
@@ -1195,7 +1206,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _locationController;
   late final TextEditingController _noteController;
-  
+
   final List<Map<String, dynamic>> _categories = [
     {'label': 'Design', 'color': const Color(0xFFFF6B9D)},
     {'label': 'Devel', 'color': const Color(0xFFFFB84D)},
@@ -1213,8 +1224,10 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
     _selectedCategory = widget.schedule.category ?? 'Design';
     _recurrence = widget.schedule.recurrence ?? 'none';
     _nameController = TextEditingController(text: widget.schedule.title);
-    _locationController = TextEditingController(text: widget.schedule.location ?? '');
-    _noteController = TextEditingController(text: widget.schedule.description ?? '');
+    _locationController =
+        TextEditingController(text: widget.schedule.location ?? '');
+    _noteController =
+        TextEditingController(text: widget.schedule.description ?? '');
   }
 
   @override
@@ -1270,7 +1283,8 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
           icon: const Icon(Icons.close, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Edit Schedule', style: TextStyle(color: Colors.black)),
+        title:
+            const Text('Edit Schedule', style: TextStyle(color: Colors.black)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -1463,7 +1477,8 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                       label: cat['label'],
                       color: cat['color'],
                       isSelected: _selectedCategory == cat['label'],
-                      onTap: () => setState(() => _selectedCategory = cat['label']),
+                      onTap: () =>
+                          setState(() => _selectedCategory = cat['label']),
                     )),
               ],
             ),
@@ -1604,11 +1619,13 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                     updatedAt: DateTime.now(),
                   );
 
-                  final scheduleProvider = Provider.of<ScheduleProvider>(context, listen: false);
-                  
+                  final scheduleProvider =
+                      Provider.of<ScheduleProvider>(context, listen: false);
+
                   // Update based on edit mode
                   if (widget.editMode == 'future') {
-                    await scheduleProvider.updateScheduleAndFuture(updatedSchedule);
+                    await scheduleProvider
+                        .updateScheduleAndFuture(updatedSchedule);
                   } else {
                     await scheduleProvider.updateSchedule(updatedSchedule);
                   }
@@ -1944,7 +1961,8 @@ class _CategoryManagementSheet extends StatefulWidget {
   });
 
   @override
-  State<_CategoryManagementSheet> createState() => _CategoryManagementSheetState();
+  State<_CategoryManagementSheet> createState() =>
+      _CategoryManagementSheetState();
 }
 
 class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
@@ -1977,7 +1995,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
 
   void _addCategory() {
     if (_addCategoryController.text.trim().isEmpty) return;
-    
+
     setState(() {
       _categories.add({
         'label': _addCategoryController.text.trim(),
@@ -1997,7 +2015,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
     final category = _categories[index];
     _addCategoryController.text = category['label'];
     _selectedColor = category['color'];
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -2028,7 +2046,9 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
                       color: color,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: _selectedColor == color ? Colors.black : Colors.transparent,
+                        color: _selectedColor == color
+                            ? Colors.black
+                            : Colors.transparent,
                         width: 2,
                       ),
                     ),
@@ -2099,7 +2119,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Add New Category
           Row(
             children: [
@@ -2153,7 +2173,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Category List
           const Text(
             'Your Categories',
