@@ -36,7 +36,7 @@ class MiniCalendarWidget extends StatelessWidget {
                   ),
                   calendarStyle: CalendarStyle(
                     todayDecoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       shape: BoxShape.circle,
                     ),
                     selectedDecoration: const BoxDecoration(

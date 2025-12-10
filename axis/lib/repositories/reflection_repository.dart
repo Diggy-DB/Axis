@@ -127,7 +127,7 @@ class ReflectionRepository {
 
     if (reflections.isEmpty) return null;
 
-    final totalMood = reflections.fold<int>(0, (sum, r) => sum + r.mood!);
+    final totalMood = reflections.fold<int>(0, (total, r) => total + r.mood!);
     return totalMood / reflections.length;
   }
 
@@ -149,7 +149,7 @@ class ReflectionRepository {
 
     if (reflections.isEmpty) return null;
 
-    final totalEnergy = reflections.fold<int>(0, (sum, r) => sum + r.energy!);
+    final totalEnergy = reflections.fold<int>(0, (total, r) => total + r.energy!);
     return totalEnergy / reflections.length;
   }
 

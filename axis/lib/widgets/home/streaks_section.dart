@@ -55,7 +55,7 @@ class StreaksSection extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       backgroundColor:
-                          AppColors.forDomain(habit.domain).withOpacity(0.1),
+                          AppColors.forDomain(habit.domain).withValues(alpha: 0.1),
                     );
                   }).toList(),
                 ),

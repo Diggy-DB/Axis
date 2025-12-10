@@ -75,12 +75,12 @@ class AppTheme {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.md),
           borderSide:
-              BorderSide(color: AppColors.textSecondaryLight.withOpacity(0.2)),
+              BorderSide(color: AppColors.textSecondaryLight.withValues(alpha: 0.2)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.md),
           borderSide:
-              BorderSide(color: AppColors.textSecondaryLight.withOpacity(0.2)),
+              BorderSide(color: AppColors.textSecondaryLight.withValues(alpha: 0.2)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.md),
@@ -126,7 +126,7 @@ class AppTheme {
 
       // Divider
       dividerTheme: DividerThemeData(
-        color: AppColors.textSecondaryLight.withOpacity(0.1),
+        color: AppColors.textSecondaryLight.withValues(alpha: 0.1),
         thickness: 1,
       ),
     );
@@ -205,12 +205,12 @@ class AppTheme {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.md),
           borderSide:
-              BorderSide(color: AppColors.textSecondaryDark.withOpacity(0.2)),
+              BorderSide(color: AppColors.textSecondaryDark.withValues(alpha: 0.2)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.md),
           borderSide:
-              BorderSide(color: AppColors.textSecondaryDark.withOpacity(0.2)),
+              BorderSide(color: AppColors.textSecondaryDark.withValues(alpha: 0.2)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppBorderRadius.md),
@@ -255,7 +255,7 @@ class AppTheme {
 
       // Divider
       dividerTheme: DividerThemeData(
-        color: AppColors.textSecondaryDark.withOpacity(0.1),
+        color: AppColors.textSecondaryDark.withValues(alpha: 0.1),
         thickness: 1,
       ),
     );
