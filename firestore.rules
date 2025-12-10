@@ -45,6 +45,17 @@ service cloud.firestore {
       match /recommendations/{recommendationId} {
         allow read, write: if isOwner(userId);
       }
+      
+      // User's daily summaries (for AI reflection summaries)
+      match /dailySummaries/{summaryId} {
+        allow read: if isOwner(userId);
+        allow write: if false; // Only Cloud Function can write
+      }
+      
+      // User's categories subcollection
+      match /categories/{categoryId} {
+        allow read, write: if isOwner(userId);
+      }
     }
   }
 }
