@@ -109,7 +109,7 @@ class _NoSummaryCard extends StatelessWidget {
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.auto_awesome,
                       color: AppColors.primary,
                       size: 20,
@@ -158,7 +158,7 @@ class _NoSummaryCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.tips_and_updates,
                       size: 16,
                       color: AppColors.primary,
@@ -269,7 +269,7 @@ class _InsightCard extends StatelessWidget {
                       color: AppColors.primary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.auto_awesome,
                       color: AppColors.primary,
                       size: 20,

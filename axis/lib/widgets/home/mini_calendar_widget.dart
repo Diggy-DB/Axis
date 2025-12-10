@@ -76,7 +76,7 @@ class MiniCalendarWidget extends StatelessWidget {
                           child: Container(
                             width: 6,
                             height: 6,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppColors.error,
                               shape: BoxShape.circle,
                             ),
