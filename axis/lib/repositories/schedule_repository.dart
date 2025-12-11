@@ -163,13 +163,30 @@ class ScheduleRepository {
             .difference(schedule.scheduledDate)
             .inDays;
 
+        // Apply the same time of day from the edited schedule to each future date
+        final updatedStartTime = DateTime(
+          existingSchedule.scheduledDate.year,
+          existingSchedule.scheduledDate.month,
+          existingSchedule.scheduledDate.day,
+          schedule.startTime.hour,
+          schedule.startTime.minute,
+        );
+
+        final updatedEndTime = DateTime(
+          existingSchedule.scheduledDate.year,
+          existingSchedule.scheduledDate.month,
+          existingSchedule.scheduledDate.day,
+          schedule.endTime.hour,
+          schedule.endTime.minute,
+        );
+
         final updatedSchedule = existingSchedule.copyWith(
           title: schedule.title,
           description: schedule.description,
           category: schedule.category,
           location: schedule.location,
-          startTime: schedule.startTime.add(Duration(days: daysDiff)),
-          endTime: schedule.endTime.add(Duration(days: daysDiff)),
+          startTime: updatedStartTime,
+          endTime: updatedEndTime,
           updatedAt: DateTime.now(),
         );
 
