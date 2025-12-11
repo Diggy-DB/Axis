@@ -301,10 +301,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       'Deadline: ${DateFormat('MMM d, h:mm a').format(task.scheduledDate!)}'),
                 ],
               ),
-            ],
-          ),
+          ],
         ),
-        actions: [
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
