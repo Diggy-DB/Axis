@@ -494,8 +494,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ],
               ),
             ],
-            ],
-          ),
+          ],
         ),
         actions: [
           TextButton(
