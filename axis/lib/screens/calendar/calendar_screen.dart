@@ -279,7 +279,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(task.title),
+        title: Text(
+          task.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,8 +301,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       'Deadline: ${DateFormat('MMM d, h:mm a').format(task.scheduledDate!)}'),
                 ],
               ),
-          ],
+            ],
+          ),
         ),
+        actions: [
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -350,12 +356,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
             Expanded(child: Text(habit.name)),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: Color(habit.domain.colorValue).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
@@ -371,7 +378,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             if (habit.description.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text(habit.description),
+              Text(
+                habit.description,
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
             const SizedBox(height: 16),
             if (habit.startTime != null)
@@ -391,10 +402,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
               children: [
                 const Icon(Icons.repeat, size: 16),
                 const SizedBox(width: 8),
-                Expanded(child: Text(repeatDays)),
+                Expanded(
+                  child: Text(
+                    repeatDays,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -410,7 +428,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(schedule.title),
+        title: Text(
+          schedule.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,7 +465,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 children: [
                   const Icon(Icons.category, size: 16),
                   const SizedBox(width: 8),
-                  Text(schedule.category!),
+                  Expanded(
+                    child: Text(
+                      schedule.category!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -468,7 +496,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ],
               ),
             ],
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -677,6 +706,8 @@ class _ScheduleTaskCard extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (task.description != null) ...[
                         const SizedBox(height: 4),
@@ -905,19 +936,22 @@ class _HourlyCalendarViewState extends State<_HourlyCalendarView> {
                 width: 2,
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  schedule.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    schedule.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
                 if (height > 40) ...[
                   const SizedBox(height: 2),
                   Text(
@@ -968,6 +1002,7 @@ class _HourlyCalendarViewState extends State<_HourlyCalendarView> {
                   ),
                 ],
               ],
+              ),
             ),
           ),
         ),

@@ -70,6 +70,8 @@ class _TaskItem extends StatelessWidget {
         style: task.status == TaskStatus.completed
             ? const TextStyle(decoration: TextDecoration.lineThrough)
             : null,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
       trailing: task.domain != null
           ? Container(

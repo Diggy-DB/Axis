@@ -172,6 +172,8 @@ class _CategorySection extends StatelessWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         domain.description,
@@ -179,7 +181,7 @@ class _CategorySection extends StatelessWidget {
                           fontSize: 12,
                           color: Colors.grey[600],
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -352,6 +354,8 @@ class _HabitCard extends StatelessWidget {
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               IconButton(

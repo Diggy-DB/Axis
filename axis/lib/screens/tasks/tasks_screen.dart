@@ -766,6 +766,8 @@ class _TaskCard extends StatelessWidget {
                             isCompleted ? TextDecoration.lineThrough : null,
                         color: isCompleted ? theme.disabledColor : null,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     if (task.description != null) ...[
                       const SizedBox(height: 4),
@@ -818,6 +820,8 @@ class _TaskCard extends StatelessWidget {
                                         fontSize: 11,
                                         fontWeight: FontWeight.w500,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
@@ -892,14 +896,22 @@ class _TaskCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(task.title),
+        title: Text(
+          task.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (task.description != null) ...[
-                Text(task.description!),
+                Text(
+                  task.description!,
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 16),
               ],
               if (task.scheduledDate != null)
