@@ -5,6 +5,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "scheduledDate",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "priority",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "status",
           "order": "ASCENDING"
         },
@@ -15,28 +29,20 @@
         {
           "fieldPath": "priority",
           "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "DESCENDING"
         }
       ]
     },
     {
-      "collectionGroup": "tasks",
+      "collectionGroup": "schedules",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "scheduledDate",
+          "fieldPath": "recurrenceId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "priority",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "__name__",
-          "order": "DESCENDING"
+          "fieldPath": "scheduledDate",
+          "order": "ASCENDING"
         }
       ]
     }

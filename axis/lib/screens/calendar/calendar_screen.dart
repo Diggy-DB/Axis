@@ -504,112 +504,62 @@ class _CalendarScreenState extends State<CalendarScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-
-              // If it's a recurring schedule, ask which ones to edit
-              if (schedule.recurrenceId != null) {
-                final choice = await showDialog<String>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Edit Recurring Schedule'),
-                    content:
-                        const Text('Which schedules would you like to edit?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, 'cancel'),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, 'this'),
-                        child: const Text('Just this schedule'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, 'future'),
-                        child: const Text('This and future schedules'),
-                      ),
-                    ],
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => _EditScheduleScreen(
+                    schedule: schedule,
                   ),
-                );
-
-                if (choice == 'this' || choice == 'future') {
-                  if (context.mounted) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => _EditScheduleScreen(
-                          schedule: schedule,
-                          editMode: choice == 'future' ? 'future' : 'this',
-                        ),
-                        fullscreenDialog: true,
-                      ),
-                    );
-                  }
-                }
-              } else {
-                // Not a recurring schedule, just edit normally
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => _EditScheduleScreen(
-                      schedule: schedule,
-                      editMode: 'this',
-                    ),
-                    fullscreenDialog: true,
-                  ),
-                );
-              }
+                  fullscreenDialog: true,
+                ),
+              );
             },
             child: const Text('Edit'),
           ),
           TextButton(
             onPressed: () async {
-              // If it's a recurring schedule, ask which ones to delete
+              Navigator.pop(context);
+              
+              // Show delete confirmation dialog with appropriate options
               if (schedule.recurrenceId != null) {
-                final choice = await showDialog<String>(
+                // Recurring schedule - show both options
+                await showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Delete Recurring Schedule'),
-                    content:
-                        const Text('Which schedules would you like to delete?'),
+                    title: const Text('Delete recurring event'),
+                    content: const Text('Do you want to delete this event or this and all future events?'),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context, 'cancel'),
+                        onPressed: () => Navigator.pop(context),
                         child: const Text('Cancel'),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pop(context, 'this'),
-                        style:
-                            TextButton.styleFrom(foregroundColor: Colors.red),
-                        child: const Text('Just this schedule'),
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await Provider.of<ScheduleProvider>(context, listen: false)
+                              .deleteSchedule(schedule.id);
+                        },
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        child: const Text('This event'),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pop(context, 'future'),
-                        style:
-                            TextButton.styleFrom(foregroundColor: Colors.red),
-                        child: const Text('This and future schedules'),
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await Provider.of<ScheduleProvider>(context, listen: false)
+                              .deleteScheduleAndFuture(schedule);
+                        },
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        child: const Text('This and following events'),
                       ),
                     ],
                   ),
                 );
-
-                if (choice == 'this' && context.mounted) {
-                  await Provider.of<ScheduleProvider>(context, listen: false)
-                      .deleteSchedule(schedule.id);
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                } else if (choice == 'future' && context.mounted) {
-                  await Provider.of<ScheduleProvider>(context, listen: false)
-                      .deleteScheduleAndFuture(schedule);
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                }
               } else {
-                // Not a recurring schedule, show normal confirmation
+                // Non-recurring schedule - simple confirmation
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Delete Schedule'),
-                    content: const Text(
-                        'Are you sure you want to delete this schedule?'),
+                    title: const Text('Delete event'),
+                    content: const Text('Are you sure you want to delete this event?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),
@@ -617,8 +567,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(context, true),
-                        style:
-                            TextButton.styleFrom(foregroundColor: Colors.red),
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
                         child: const Text('Delete'),
                       ),
                     ],
@@ -628,9 +577,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 if (confirm == true && context.mounted) {
                   await Provider.of<ScheduleProvider>(context, listen: false)
                       .deleteSchedule(schedule.id);
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
                 }
               }
             },
@@ -1571,11 +1517,9 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
 
 class _EditScheduleScreen extends StatefulWidget {
   final Schedule schedule;
-  final String editMode; // 'this' or 'future'
 
   const _EditScheduleScreen({
     required this.schedule,
-    required this.editMode,
   });
 
   @override
@@ -1951,13 +1895,73 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
 
             const SizedBox(height: 32),
 
-            // Update Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
+            // Update Buttons
+            _SaveButton(
+              onPressed: () async {
+                if (_selectedDate == null) return;
+
+                final scheduledDateTime = DateTime(
+                  _selectedDate!.year,
+                  _selectedDate!.month,
+                  _selectedDate!.day,
+                );
+
+                final startDateTime = DateTime(
+                  _selectedDate!.year,
+                  _selectedDate!.month,
+                  _selectedDate!.day,
+                  _startTime.hour,
+                  _startTime.minute,
+                );
+
+                final endDateTime = DateTime(
+                  _selectedDate!.year,
+                  _selectedDate!.month,
+                  _selectedDate!.day,
+                  _endTime.hour,
+                  _endTime.minute,
+                );
+
+                final updatedSchedule = widget.schedule.copyWith(
+                  title: _nameController.text.trim().isEmpty
+                      ? _selectedCategory
+                      : _nameController.text.trim(),
+                  description: _noteController.text.trim().isEmpty
+                      ? null
+                      : _noteController.text.trim(),
+                  scheduledDate: scheduledDateTime,
+                  startTime: startDateTime,
+                  endTime: endDateTime,
+                  category: _selectedCategory,
+                  location: _locationController.text.trim().isEmpty
+                      ? null
+                      : _locationController.text.trim(),
+                  recurrence: _recurrence == 'none' ? null : _recurrence,
+                  updatedAt: DateTime.now(),
+                );
+
+                final scheduleProvider =
+                    Provider.of<ScheduleProvider>(context, listen: false);
+                await scheduleProvider.updateSchedule(updatedSchedule);
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              },
+              editMode: 'this',
+            ),
+            if (widget.schedule.recurrenceId != null) ...[
+              const SizedBox(height: 12),
+              _SaveButton(
                 onPressed: () async {
-                  if (_selectedDate == null) return;
+                  if (_selectedDate == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please select a date'),
+                      ),
+                    );
+                    return;
+                  }
 
                   final scheduledDateTime = DateTime(
                     _selectedDate!.year,
@@ -1979,59 +1983,79 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                     _selectedDate!.day,
                     _endTime.hour,
                     _endTime.minute,
-                  );
+                    );
 
-                  final updatedSchedule = widget.schedule.copyWith(
-                    title: _nameController.text.trim().isEmpty
-                        ? _selectedCategory
-                        : _nameController.text.trim(),
-                    description: _noteController.text.trim().isEmpty
-                        ? null
-                        : _noteController.text.trim(),
-                    scheduledDate: scheduledDateTime,
-                    startTime: startDateTime,
-                    endTime: endDateTime,
-                    category: _selectedCategory,
-                    location: _locationController.text.trim().isEmpty
-                        ? null
-                        : _locationController.text.trim(),
-                    recurrence: _recurrence == 'none' ? null : _recurrence,
-                    updatedAt: DateTime.now(),
-                  );
+                    final updatedSchedule = widget.schedule.copyWith(
+                      title: _nameController.text.trim().isEmpty
+                          ? _selectedCategory
+                          : _nameController.text.trim(),
+                      description: _noteController.text.trim().isEmpty
+                          ? null
+                          : _noteController.text.trim(),
+                      scheduledDate: scheduledDateTime,
+                      startTime: startDateTime,
+                      endTime: endDateTime,
+                      category: _selectedCategory,
+                      location: _locationController.text.trim().isEmpty
+                          ? null
+                          : _locationController.text.trim(),
+                      recurrence: _recurrence == 'none' ? null : _recurrence,
+                      updatedAt: DateTime.now(),
+                    );
 
-                  final scheduleProvider =
-                      Provider.of<ScheduleProvider>(context, listen: false);
-
-                  // Update based on edit mode
-                  if (widget.editMode == 'future') {
+                    final scheduleProvider =
+                        Provider.of<ScheduleProvider>(context, listen: false);
                     await scheduleProvider
                         .updateScheduleAndFuture(updatedSchedule);
-                  } else {
-                    await scheduleProvider.updateSchedule(updatedSchedule);
-                  }
 
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                    }
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6B66FF),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Update Schedule',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                editMode: 'future',
               ),
-            ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SaveButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final String editMode; // 'this' or 'future'
+
+  const _SaveButton({
+    required this.onPressed,
+    required this.editMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final buttonText = editMode == 'this' 
+        ? 'Save this event only' 
+        : 'Save this and following events';
+    
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF6B66FF),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          elevation: 0,
+        ),
+        child: Text(
+          buttonText,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
