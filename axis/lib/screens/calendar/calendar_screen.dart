@@ -1081,15 +1081,16 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final dates = _getUpcomingDates();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: Icon(Icons.close, color: theme.iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -1098,22 +1099,24 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "Let's set the\nschedule easily",
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 height: 1.2,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 32),
 
             // Date Selection
-            const Text(
+            Text(
               'Select the date',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1122,6 +1125,7 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                 ...dates.take(4).map((date) {
                   final isSelected = _selectedDate?.day == date.day &&
                       _selectedDate?.month == date.month;
+                  final isDark = theme.brightness == Brightness.dark;
                   return Expanded(
                     child: GestureDetector(
                       onTap: () => setState(() => _selectedDate = date),
@@ -1131,7 +1135,9 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? const Color(0xFF6B66FF)
-                              : const Color(0xFFF5F5F5),
+                              : (isDark
+                                  ? theme.cardColor
+                                  : const Color(0xFFF5F5F5)),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -1142,7 +1148,9 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: isSelected ? Colors.white : Colors.black,
+                                color: isSelected
+                                    ? Colors.white
+                                    : theme.textTheme.bodyLarge?.color,
                               ),
                             ),
                             Text(
@@ -1151,7 +1159,8 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                                 fontSize: 12,
                                 color: isSelected
                                     ? Colors.white70
-                                    : Colors.black54,
+                                    : theme.textTheme.bodySmall?.color
+                                        ?.withOpacity(0.7),
                               ),
                             ),
                           ],
@@ -1164,10 +1173,12 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                   width: 70,
                   height: 70,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
+                    color: theme.brightness == Brightness.dark
+                        ? theme.cardColor
+                        : const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
@@ -1175,13 +1186,15 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: theme.textTheme.bodyLarge?.color,
                         ),
                       ),
                       Text(
                         'date',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.black54,
+                          color: theme.textTheme.bodySmall?.color
+                              ?.withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -1193,11 +1206,12 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
             const SizedBox(height: 32),
 
             // Time Selection
-            const Text(
+            Text(
               'Select time',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1241,11 +1255,12 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
             const SizedBox(height: 32),
 
             // Schedule Name
-            const Text(
+            Text(
               'Schedule Name',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1254,7 +1269,9 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
               decoration: InputDecoration(
                 hintText: 'Enter schedule name',
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: theme.brightness == Brightness.dark
+                    ? theme.cardColor
+                    : const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -1268,11 +1285,12 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Category',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
+                    color: theme.textTheme.bodyLarge?.color,
                   ),
                 ),
                 TextButton.icon(
@@ -1307,11 +1325,12 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
             const SizedBox(height: 32),
 
             // Location
-            const Text(
+            Text(
               'Location (optional)',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1321,7 +1340,9 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                 hintText: 'Add location',
                 prefixIcon: const Icon(Icons.location_on_outlined),
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: theme.brightness == Brightness.dark
+                    ? theme.cardColor
+                    : const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -1332,11 +1353,12 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
             const SizedBox(height: 32),
 
             // Recurrence
-            const Text(
+            Text(
               'Repeat',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1344,7 +1366,9 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
               value: _recurrence,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: theme.brightness == Brightness.dark
+                    ? theme.cardColor
+                    : const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -1368,11 +1392,12 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
             const SizedBox(height: 32),
 
             // Note
-            const Text(
+            Text(
               'Note',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1382,7 +1407,9 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
               decoration: InputDecoration(
                 hintText: 'Add details about the task...',
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: theme.brightness == Brightness.dark
+                    ? theme.cardColor
+                    : const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -1555,19 +1582,20 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final dates = _getUpcomingDates();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: Icon(Icons.close, color: theme.iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
-        title:
-            const Text('Edit Schedule', style: TextStyle(color: Colors.black)),
+        title: Text('Edit Schedule',
+            style: TextStyle(color: theme.textTheme.bodyLarge?.color)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -1575,11 +1603,12 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Date Selection
-            const Text(
+            Text(
               'Select the date',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1588,6 +1617,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                 ...dates.take(4).map((date) {
                   final isSelected = _selectedDate?.day == date.day &&
                       _selectedDate?.month == date.month;
+                  final isDark = theme.brightness == Brightness.dark;
                   return Expanded(
                     child: GestureDetector(
                       onTap: () => setState(() => _selectedDate = date),
@@ -1597,7 +1627,9 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? const Color(0xFF6B66FF)
-                              : const Color(0xFFF5F5F5),
+                              : (isDark
+                                  ? theme.cardColor
+                                  : const Color(0xFFF5F5F5)),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -1608,7 +1640,9 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: isSelected ? Colors.white : Colors.black,
+                                color: isSelected
+                                    ? Colors.white
+                                    : theme.textTheme.bodyLarge?.color,
                               ),
                             ),
                             Text(
@@ -1617,7 +1651,8 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                                 fontSize: 12,
                                 color: isSelected
                                     ? Colors.white70
-                                    : Colors.black54,
+                                    : theme.textTheme.bodySmall?.color
+                                        ?.withOpacity(0.7),
                               ),
                             ),
                           ],
@@ -1630,10 +1665,12 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                   width: 70,
                   height: 70,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
+                    color: theme.brightness == Brightness.dark
+                        ? theme.cardColor
+                        : const Color(0xFFF5F5F5),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
@@ -1641,13 +1678,15 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: theme.textTheme.bodyLarge?.color,
                         ),
                       ),
                       Text(
                         'date',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.black54,
+                          color: theme.textTheme.bodySmall?.color
+                              ?.withOpacity(0.7),
                         ),
                       ),
                     ],
@@ -1659,11 +1698,12 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
             const SizedBox(height: 32),
 
             // Time Selection
-            const Text(
+            Text(
               'Select time',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1707,11 +1747,12 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
             const SizedBox(height: 32),
 
             // Schedule Name
-            const Text(
+            Text(
               'Schedule Name',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1720,7 +1761,9 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
               decoration: InputDecoration(
                 hintText: 'Enter schedule name',
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: theme.brightness == Brightness.dark
+                    ? theme.cardColor
+                    : const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -1734,11 +1777,12 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Category',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
+                    color: theme.textTheme.bodyLarge?.color,
                   ),
                 ),
                 TextButton.icon(
@@ -1773,11 +1817,12 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
             const SizedBox(height: 32),
 
             // Location
-            const Text(
+            Text(
               'Location (optional)',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1787,7 +1832,9 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                 hintText: 'Add location',
                 prefixIcon: const Icon(Icons.location_on_outlined),
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: theme.brightness == Brightness.dark
+                    ? theme.cardColor
+                    : const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -1798,11 +1845,12 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
             const SizedBox(height: 32),
 
             // Recurrence
-            const Text(
+            Text(
               'Repeat',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1810,7 +1858,9 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
               value: _recurrence,
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: theme.brightness == Brightness.dark
+                    ? theme.cardColor
+                    : const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -1834,11 +1884,12 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
             const SizedBox(height: 32),
 
             // Note
-            const Text(
+            Text(
               'Note',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
               ),
             ),
             const SizedBox(height: 16),
@@ -1848,7 +1899,9 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
               decoration: InputDecoration(
                 hintText: 'Add details about the task...',
                 filled: true,
-                fillColor: const Color(0xFFF5F5F5),
+                fillColor: theme.brightness == Brightness.dark
+                    ? theme.cardColor
+                    : const Color(0xFFF5F5F5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,

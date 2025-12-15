@@ -7,18 +7,20 @@ class TaskProvider extends ChangeNotifier {
 
   List<Task> _todayTasks = [];
   List<Task> _upcomingTasks = [];
+  List<Task> _overdueTasks = [];
   final bool _isLoading = false;
   String? _error;
 
   List<Task> get todayTasks => _todayTasks;
   List<Task> get upcomingTasks => _upcomingTasks;
+  List<Task> get overdueTasks => _overdueTasks;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
   /// Get tasks for a specific date
   List<Task> getTasksForDate(DateTime date) {
     final normalizedDate = DateTime(date.year, date.month, date.day);
-    final allTasks = [..._todayTasks, ..._upcomingTasks];
+    final allTasks = [..._todayTasks, ..._upcomingTasks, ..._overdueTasks];
 
     return allTasks.where((task) {
       if (task.scheduledDate == null) return false;
@@ -39,6 +41,7 @@ class TaskProvider extends ChangeNotifier {
       _repository = null;
       _todayTasks = [];
       _upcomingTasks = [];
+      _overdueTasks = [];
       notifyListeners();
     }
   }
@@ -53,6 +56,11 @@ class TaskProvider extends ChangeNotifier {
 
     _repository!.streamUpcomingTasks().listen((tasks) {
       _upcomingTasks = tasks;
+      notifyListeners();
+    });
+
+    _repository!.streamOverdueTasks().listen((tasks) {
+      _overdueTasks = tasks;
       notifyListeners();
     });
   }

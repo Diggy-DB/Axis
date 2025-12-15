@@ -47,7 +47,6 @@ class TaskRepository {
             isGreaterThanOrEqualTo: Timestamp.fromDate(today))
         .where('scheduledDate', isLessThan: Timestamp.fromDate(tomorrow))
         .orderBy('scheduledDate')
-        .orderBy('priority', descending: true)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => Task.fromFirestore(doc)).toList());
@@ -64,10 +63,37 @@ class TaskRepository {
         .where('status',
             whereIn: [TaskStatus.pending.name, TaskStatus.inProgress.name])
         .orderBy('scheduledDate')
-        .orderBy('priority', descending: true)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => Task.fromFirestore(doc)).toList());
+  }
+
+  /// Stream overdue tasks (incomplete tasks from previous days)
+  Stream<List<Task>> streamOverdueTasks() {
+    final today = _normalizeDate(DateTime.now());
+    debugPrint('TaskRepository: Streaming overdue tasks before: $today');
+
+    return _tasksCollection
+        .where('scheduledDate', isLessThan: Timestamp.fromDate(today))
+        .orderBy('scheduledDate', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      debugPrint(
+          'TaskRepository: Found ${snapshot.docs.length} tasks before today');
+      final overdueTasks =
+          snapshot.docs.map((doc) => Task.fromFirestore(doc)).where((task) {
+        final isIncomplete = task.status == TaskStatus.pending ||
+            task.status == TaskStatus.inProgress;
+        if (isIncomplete) {
+          debugPrint(
+              'TaskRepository: Overdue task - ${task.title} scheduled for ${task.scheduledDate}');
+        }
+        return isIncomplete;
+      }).toList();
+      debugPrint(
+          'TaskRepository: Returning ${overdueTasks.length} overdue tasks');
+      return overdueTasks;
+    });
   }
 
   /// Stream tasks by date range

@@ -312,6 +312,56 @@ class _HabitCard extends StatelessWidget {
 
   String _formatWeekDays() {
     if (habit.weekDays.isEmpty) return 'No days set';
+
+    final days = habit.weekDays.toSet();
+    final weekdays = {1, 2, 3, 4, 5}; // Mon-Fri
+    final weekend = {6, 7}; // Sat-Sun
+    final everyday = {1, 2, 3, 4, 5, 6, 7}; // All days
+
+    // Check for everyday
+    if (days.containsAll(everyday)) {
+      return 'Everyday';
+    }
+
+    // Check for weekdays + weekend combinations
+    final hasAllWeekdays = days.containsAll(weekdays);
+    final hasAllWeekend = days.containsAll(weekend);
+
+    if (hasAllWeekdays && hasAllWeekend) {
+      return 'Everyday';
+    }
+
+    if (hasAllWeekdays && days.length == 5) {
+      return 'Every weekday';
+    }
+
+    if (hasAllWeekend && days.length == 2) {
+      return 'Every weekend';
+    }
+
+    // Check for weekdays + some weekend days
+    if (hasAllWeekdays) {
+      final extraDays = days.difference(weekdays);
+      final dayNames = {6: 'Saturday', 7: 'Sunday'};
+      final extraDayNames = extraDays.map((d) => dayNames[d]).join(' and ');
+      return 'Every weekday and $extraDayNames';
+    }
+
+    // Check for weekend + some weekdays
+    if (hasAllWeekend) {
+      final extraDays = days.difference(weekend);
+      final dayNames = {
+        1: 'Monday',
+        2: 'Tuesday',
+        3: 'Wednesday',
+        4: 'Thursday',
+        5: 'Friday'
+      };
+      final extraDayNames = extraDays.map((d) => dayNames[d]).join(', ');
+      return 'Every weekend and $extraDayNames';
+    }
+
+    // For other combinations, list the days
     final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return habit.weekDays.map((day) => dayNames[day - 1]).join(', ');
   }
@@ -397,6 +447,7 @@ class _HabitCard extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(Icons.calendar_today,
                   size: 14,
@@ -406,15 +457,17 @@ class _HabitCard extends StatelessWidget {
                       ?.color
                       ?.withOpacity(0.7)),
               const SizedBox(width: 4),
-              Text(
-                _formatWeekDays(),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.color
-                      ?.withOpacity(0.7),
+              Expanded(
+                child: Text(
+                  _formatWeekDays(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.color
+                        ?.withOpacity(0.7),
+                  ),
                 ),
               ),
               if (_formatTime().isNotEmpty) ...[

@@ -10,11 +10,28 @@ class CategoryProvider extends ChangeNotifier {
   String? _error;
 
   CategoryProvider({required CategoryRepository repository})
-      : _repository = repository;
+      : _repository = repository {
+    // Only initialize if we have a valid userId
+    if (repository.userId.isNotEmpty) {
+      _initializeCategories();
+    }
+  }
 
   List<models.Category> get categories => _categories;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  // Initialize categories stream
+  void _initializeCategories() {
+    _repository.streamCategories().listen((categories) {
+      _categories = categories;
+      notifyListeners();
+    }, onError: (error) {
+      _error = error.toString();
+      debugPrint('CategoryProvider: Error streaming categories: $error');
+      notifyListeners();
+    });
+  }
 
   // Stream categories
   Stream<List<models.Category>> streamCategories() {

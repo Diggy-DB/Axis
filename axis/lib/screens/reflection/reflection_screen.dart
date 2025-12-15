@@ -5,6 +5,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import '../../providers/reflection_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../models/reflection.dart';
+import '../../models/task.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/enums.dart';
 
@@ -318,7 +319,7 @@ class _EmptyReflection extends StatelessWidget {
   }
 }
 
-class _CompletedTasksSection extends StatelessWidget {
+class _CompletedTasksSection extends StatefulWidget {
   final List<String> completedTaskIds;
   final DateTime date;
 
@@ -328,23 +329,87 @@ class _CompletedTasksSection extends StatelessWidget {
   });
 
   @override
+  State<_CompletedTasksSection> createState() => _CompletedTasksSectionState();
+}
+
+class _CompletedTasksSectionState extends State<_CompletedTasksSection> {
+  List<Task> _completedTasks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompletedTasks();
+  }
+
+  @override
+  void didUpdateWidget(_CompletedTasksSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.date != widget.date) {
+      _loadCompletedTasks();
+    }
+  }
+
+  Future<void> _loadCompletedTasks() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+
+      // Get all tasks for this date
+      final allTasks = taskProvider.getTasksForDate(widget.date);
+
+      // Filter to only completed tasks on this specific date
+      final completedTasks = allTasks.where((task) {
+        if (task.status != TaskStatus.completed) return false;
+        if (task.completedAt == null) return false;
+        final completedDate = task.completedAt!;
+        return completedDate.year == widget.date.year &&
+            completedDate.month == widget.date.month &&
+            completedDate.day == widget.date.day;
+      }).toList();
+
+      setState(() {
+        _completedTasks = completedTasks;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading completed tasks: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final taskProvider = Provider.of<TaskProvider>(context);
 
-    // Get completed tasks for this date
-    final allTasks = [
-      ...taskProvider.todayTasks,
-      ...taskProvider.upcomingTasks
-    ];
-    final completedTasks = allTasks.where((task) {
-      if (task.status != TaskStatus.completed) return false;
-      if (task.completedAt == null) return false;
-      final completedDate = task.completedAt!;
-      return completedDate.year == date.year &&
-          completedDate.month == date.month &&
-          completedDate.day == date.day;
-    }).toList();
+    if (_isLoading) {
+      return Card(
+        margin: const EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: AppColors.success),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Completed Tasks',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Center(child: CircularProgressIndicator()),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -366,7 +431,7 @@ class _CompletedTasksSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            if (completedTasks.isEmpty)
+            if (_completedTasks.isEmpty)
               Text(
                 'No tasks completed on this day',
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -374,7 +439,7 @@ class _CompletedTasksSection extends StatelessWidget {
                 ),
               )
             else
-              ...completedTasks.map((task) => Padding(
+              ..._completedTasks.map((task) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       children: [
@@ -392,7 +457,7 @@ class _CompletedTasksSection extends StatelessWidget {
                   )),
             const SizedBox(height: 8),
             Text(
-              '${completedTasks.length} task${completedTasks.length == 1 ? '' : 's'} completed',
+              '${_completedTasks.length} task${_completedTasks.length == 1 ? '' : 's'} completed',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.secondary,
                 fontWeight: FontWeight.bold,
