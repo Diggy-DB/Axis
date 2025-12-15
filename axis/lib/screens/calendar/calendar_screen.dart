@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/schedule_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/habit_provider.dart';
@@ -32,12 +30,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Future<void> _refreshData() async {
     setState(() => _isRefreshing = true);
     try {
-      // Force reload by notifying listeners
-      final scheduleProvider =
-          Provider.of<ScheduleProvider>(context, listen: false);
-      final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-      final habitProvider = Provider.of<HabitProvider>(context, listen: false);
-
       // Providers will automatically refresh via streams
       await Future.delayed(const Duration(milliseconds: 500));
     } finally {
@@ -95,10 +87,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
         if (a.startTime == null || b.startTime == null) return 0;
         return a.startTime!.compareTo(b.startTime!);
       });
-
-    // Combine schedules, tasks, and habits
-    final totalItems =
-        schedulesForDay.length + tasksForDay.length + habitsForDay.length;
 
     // Get current month days
     final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
@@ -360,55 +348,56 @@ class _CalendarScreenState extends State<CalendarScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Color(habit.domain.colorValue).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                habit.domain.displayName,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(habit.domain.colorValue),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Color(habit.domain.colorValue).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  habit.domain.displayName,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(habit.domain.colorValue),
+                  ),
                 ),
               ),
-            ),
-            if (habit.description.isNotEmpty) ...[
+              if (habit.description.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  habit.description,
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
               const SizedBox(height: 16),
-              Text(
-                habit.description,
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (habit.startTime != null)
+              if (habit.startTime != null)
+                Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      habit.endTime != null
+                          ? '${DateFormat('h:mm a').format(habit.startTime!)} - ${DateFormat('h:mm a').format(habit.endTime!)}'
+                          : DateFormat('h:mm a').format(habit.startTime!),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.access_time, size: 16),
+                  const Icon(Icons.repeat, size: 16),
                   const SizedBox(width: 8),
-                  Text(
-                    habit.endTime != null
-                        ? '${DateFormat('h:mm a').format(habit.startTime!)} - ${DateFormat('h:mm a').format(habit.endTime!)}'
-                        : DateFormat('h:mm a').format(habit.startTime!),
+                  Expanded(
+                    child: Text(
+                      repeatDays,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.repeat, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    repeatDays,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
             ],
           ),
         ),
@@ -518,7 +507,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              
+
               // Show delete confirmation dialog with appropriate options
               if (schedule.recurrenceId != null) {
                 // Recurring schedule - show both options
@@ -526,7 +515,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete recurring event'),
-                    content: const Text('Do you want to delete this event or this and all future events?'),
+                    content: const Text(
+                        'Do you want to delete this event or this and all future events?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -535,19 +525,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       TextButton(
                         onPressed: () async {
                           Navigator.pop(context);
-                          await Provider.of<ScheduleProvider>(context, listen: false)
+                          await Provider.of<ScheduleProvider>(context,
+                                  listen: false)
                               .deleteSchedule(schedule.id);
                         },
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        style:
+                            TextButton.styleFrom(foregroundColor: Colors.red),
                         child: const Text('This event'),
                       ),
                       TextButton(
                         onPressed: () async {
                           Navigator.pop(context);
-                          await Provider.of<ScheduleProvider>(context, listen: false)
+                          await Provider.of<ScheduleProvider>(context,
+                                  listen: false)
                               .deleteScheduleAndFuture(schedule);
                         },
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        style:
+                            TextButton.styleFrom(foregroundColor: Colors.red),
                         child: const Text('This and following events'),
                       ),
                     ],
@@ -559,7 +553,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete event'),
-                    content: const Text('Are you sure you want to delete this event?'),
+                    content: const Text(
+                        'Are you sure you want to delete this event?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),
@@ -567,7 +562,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        style:
+                            TextButton.styleFrom(foregroundColor: Colors.red),
                         child: const Text('Delete'),
                       ),
                     ],
@@ -589,6 +585,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 }
 
+// Unused - kept for potential future use
+// ignore: unused_element
 class _ScheduleTaskCard extends StatelessWidget {
   final Task task;
   final VoidCallback onTap;
@@ -718,33 +716,13 @@ class _HourlyCalendarViewState extends State<_HourlyCalendarView> {
   final ScrollController _scrollController = ScrollController();
   static const double hourHeight = 80.0;
   static const double timeColumnWidth = 60.0;
-  List<Map<String, dynamic>> _categories = [];
 
   @override
   void initState() {
     super.initState();
-    _loadCategories();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToCurrentTime();
     });
-  }
-
-  Future<void> _loadCategories() async {
-    final prefs = await SharedPreferences.getInstance();
-    final categoriesJson = prefs.getString('schedule_categories');
-    if (categoriesJson != null) {
-      final List<dynamic> decoded = jsonDecode(categoriesJson);
-      if (mounted) {
-        setState(() {
-          _categories = decoded.map((item) {
-            return {
-              'label': item['label'] as String,
-              'color': Color(item['color'] as int),
-            };
-          }).toList();
-        });
-      }
-    }
   }
 
   @override
@@ -1027,21 +1005,6 @@ class _HourlyCalendarViewState extends State<_HourlyCalendarView> {
         final categoryProvider = context.read<CategoryProvider>();
         final matchingCategory = categoryProvider.categories.firstWhere(
           (cat) => cat.label == schedule.category,
-        );
-        return Color(matchingCategory.colorValue);
-      } catch (e) {
-        return const Color(0xFF9E9E9E);
-      }
-    }
-    return const Color(0xFF9E9E9E);
-  }
-
-  Color _getTaskCategoryColor(Task task) {
-    if (task.category != null) {
-      try {
-        final categoryProvider = context.read<CategoryProvider>();
-        final matchingCategory = categoryProvider.categories.firstWhere(
-          (cat) => cat.label == task.category,
         );
         return Color(matchingCategory.colorValue);
       } catch (e) {
@@ -1983,34 +1946,34 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                     _selectedDate!.day,
                     _endTime.hour,
                     _endTime.minute,
-                    );
+                  );
 
-                    final updatedSchedule = widget.schedule.copyWith(
-                      title: _nameController.text.trim().isEmpty
-                          ? _selectedCategory
-                          : _nameController.text.trim(),
-                      description: _noteController.text.trim().isEmpty
-                          ? null
-                          : _noteController.text.trim(),
-                      scheduledDate: scheduledDateTime,
-                      startTime: startDateTime,
-                      endTime: endDateTime,
-                      category: _selectedCategory,
-                      location: _locationController.text.trim().isEmpty
-                          ? null
-                          : _locationController.text.trim(),
-                      recurrence: _recurrence == 'none' ? null : _recurrence,
-                      updatedAt: DateTime.now(),
-                    );
+                  final updatedSchedule = widget.schedule.copyWith(
+                    title: _nameController.text.trim().isEmpty
+                        ? _selectedCategory
+                        : _nameController.text.trim(),
+                    description: _noteController.text.trim().isEmpty
+                        ? null
+                        : _noteController.text.trim(),
+                    scheduledDate: scheduledDateTime,
+                    startTime: startDateTime,
+                    endTime: endDateTime,
+                    category: _selectedCategory,
+                    location: _locationController.text.trim().isEmpty
+                        ? null
+                        : _locationController.text.trim(),
+                    recurrence: _recurrence == 'none' ? null : _recurrence,
+                    updatedAt: DateTime.now(),
+                  );
 
-                    final scheduleProvider =
-                        Provider.of<ScheduleProvider>(context, listen: false);
-                    await scheduleProvider
-                        .updateScheduleAndFuture(updatedSchedule);
+                  final scheduleProvider =
+                      Provider.of<ScheduleProvider>(context, listen: false);
+                  await scheduleProvider
+                      .updateScheduleAndFuture(updatedSchedule);
 
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                    }
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
                 },
                 editMode: 'future',
               ),
@@ -2033,10 +1996,10 @@ class _SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttonText = editMode == 'this' 
-        ? 'Save this event only' 
+    final buttonText = editMode == 'this'
+        ? 'Save this event only'
         : 'Save this and following events';
-    
+
     return SizedBox(
       width: double.infinity,
       height: 56,
@@ -2150,11 +2113,9 @@ class _CategoryChip extends StatelessWidget {
 
 class _ScheduleCard extends StatefulWidget {
   final Schedule schedule;
-  final VoidCallback? onTap;
 
   const _ScheduleCard({
     required this.schedule,
-    this.onTap,
   });
 
   @override
@@ -2162,30 +2123,9 @@ class _ScheduleCard extends StatefulWidget {
 }
 
 class _ScheduleCardState extends State<_ScheduleCard> {
-  List<Map<String, dynamic>> _categories = [];
-
   @override
   void initState() {
     super.initState();
-    _loadCategories();
-  }
-
-  Future<void> _loadCategories() async {
-    final prefs = await SharedPreferences.getInstance();
-    final categoriesJson = prefs.getString('schedule_categories');
-    if (categoriesJson != null) {
-      final List<dynamic> decoded = jsonDecode(categoriesJson);
-      if (mounted) {
-        setState(() {
-          _categories = decoded
-              .map((item) => {
-                    'label': item['label'] as String,
-                    'color': Color(item['color'] as int),
-                  })
-              .toList();
-        });
-      }
-    }
   }
 
   Color _getCategoryColor() {
@@ -2209,15 +2149,12 @@ class _ScheduleCardState extends State<_ScheduleCard> {
     final color = _getCategoryColor();
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withValues(alpha: 0.3), width: 1),
-      ),
-      child: InkWell(
-        onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(16),
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: color.withValues(alpha: 0.3), width: 1),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -2309,19 +2246,17 @@ class _ScheduleCardState extends State<_ScheduleCard> {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        ));
   }
 }
 
+// Unused - kept for potential future use
+// ignore: unused_element
 class _HabitCard extends StatelessWidget {
   final Habit habit;
-  final VoidCallback? onTap;
 
   const _HabitCard({
     required this.habit,
-    this.onTap,
   });
 
   @override
@@ -2337,9 +2272,7 @@ class _HabitCard extends StatelessWidget {
       }
     }
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
+    return Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -2417,9 +2350,7 @@ class _HabitCard extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
+        ));
   }
 }
 
@@ -2536,6 +2467,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
                   );
                   await widget.categoryProvider.updateCategory(updatedCategory);
                   editController.dispose();
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                 }
               },

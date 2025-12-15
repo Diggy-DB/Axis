@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/daily_summary.dart';
 
 class DailySummaryRepository {
@@ -26,7 +27,7 @@ class DailySummaryRepository {
 
       return DailySummary.fromFirestore(querySnapshot.docs.first);
     } catch (e) {
-      print('DailySummaryRepository: Error getting summary for date: $e');
+      debugPrint('DailySummaryRepository: Error getting summary for date: $e');
       rethrow;
     }
   }
@@ -39,7 +40,7 @@ class DailySummaryRepository {
         .limit(limit)
         .snapshots()
         .handleError((error) {
-      print('DailySummaryRepository: Error streaming recent summaries: $error');
+      debugPrint('DailySummaryRepository: Error streaming recent summaries: $error');
     }).map((snapshot) => snapshot.docs
             .map((doc) => DailySummary.fromFirestore(doc))
             .toList());
@@ -62,7 +63,7 @@ class DailySummaryRepository {
         .limit(1)
         .snapshots()
         .handleError((error) {
-      print('DailySummaryRepository: Error streaming today summary: $error');
+      debugPrint('DailySummaryRepository: Error streaming today summary: $error');
     }).map((snapshot) {
       if (snapshot.docs.isEmpty) return null;
       return DailySummary.fromFirestore(snapshot.docs.first);
@@ -92,7 +93,7 @@ class DailySummaryRepository {
           .map((doc) => DailySummary.fromFirestore(doc))
           .toList();
     } catch (e) {
-      print('DailySummaryRepository: Error getting summaries in range: $e');
+      debugPrint('DailySummaryRepository: Error getting summaries in range: $e');
       rethrow;
     }
   }

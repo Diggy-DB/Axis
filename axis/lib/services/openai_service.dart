@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/reflection.dart';
 import '../models/user.dart';
@@ -173,11 +174,11 @@ Ambitions: ${user.ambition ?? 'Not specified'}
         final data = json.decode(response.body);
         return data['choices'][0]['message']['content'].trim();
       } else {
-        print('OpenAI API error: ${response.statusCode} - ${response.body}');
+        debugPrint('OpenAI API error: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to generate AI response');
       }
     } catch (e) {
-      print('Error calling OpenAI: $e');
+      debugPrint('Error calling OpenAI: $e');
       rethrow;
     }
   }

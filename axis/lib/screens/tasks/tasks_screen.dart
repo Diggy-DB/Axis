@@ -278,11 +278,14 @@ class _TasksScreenState extends State<TasksScreen>
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Category',
-                                          style: Theme.of(context).textTheme.bodySmall,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall,
                                         ),
                                         const SizedBox(height: 4),
                                         DropdownButton<String?>(
@@ -300,7 +303,8 @@ class _TasksScreenState extends State<TasksScreen>
                                               child: Text('No category'),
                                             ),
                                             ...categoryProvider.categories.map(
-                                              (category) => DropdownMenuItem<String?>(
+                                              (category) =>
+                                                  DropdownMenuItem<String?>(
                                                 value: category.label,
                                                 child: Row(
                                                   children: [
@@ -308,7 +312,8 @@ class _TasksScreenState extends State<TasksScreen>
                                                       width: 12,
                                                       height: 12,
                                                       decoration: BoxDecoration(
-                                                        color: Color(category.colorValue),
+                                                        color: Color(category
+                                                            .colorValue),
                                                         shape: BoxShape.circle,
                                                       ),
                                                     ),
@@ -796,8 +801,12 @@ class _TaskCard extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: category != null
-                                      ? Color(category.colorValue).withValues(alpha: 0.2)
-                                      : Theme.of(context).colorScheme.secondary.withValues(alpha: 0.2),
+                                      ? Color(category.colorValue)
+                                          .withValues(alpha: 0.2)
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .secondary
+                                          .withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
@@ -809,14 +818,17 @@ class _TaskCard extends StatelessWidget {
                                       decoration: BoxDecoration(
                                         color: category != null
                                             ? Color(category.colorValue)
-                                            : Theme.of(context).colorScheme.secondary,
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .secondary,
                                         shape: BoxShape.circle,
                                       ),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
                                       task.category!,
-                                      style: theme.textTheme.bodySmall?.copyWith(
+                                      style:
+                                          theme.textTheme.bodySmall?.copyWith(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -975,8 +987,9 @@ class _TaskCard extends StatelessWidget {
                                     const SizedBox(width: 8),
                                     Text(
                                       task.category!,
-                                      style:
-                                          Theme.of(context).textTheme.bodyMedium,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
                                     ),
                                   ],
                                 ),
@@ -1200,6 +1213,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
                   );
                   await widget.categoryProvider.updateCategory(updatedCategory);
                   editController.dispose();
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                 }
               },

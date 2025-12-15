@@ -6,6 +6,7 @@ import '../../widgets/home/streaks_section.dart';
 import '../../widgets/home/today_tasks_section.dart';
 import '../../widgets/home/mini_calendar_widget.dart';
 import '../../widgets/home/daily_insight_section.dart';
+import '../notifications/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -38,7 +39,11 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
-              // TODO: Navigate to notifications
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsScreen(),
+                ),
+              );
             },
           ),
           PopupMenuButton<String>(

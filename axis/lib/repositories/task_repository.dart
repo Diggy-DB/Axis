@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/task.dart';
 import '../core/constants/app_constants.dart';
 import '../core/constants/enums.dart';
@@ -115,13 +116,13 @@ class TaskRepository {
 
   /// Create a new task
   Future<String> createTask(Task task) async {
-    print('TaskRepository: Creating task for user: $userId');
-    print('TaskRepository: Task data: ${task.title}');
+    debugPrint('TaskRepository: Creating task for user: $userId');
+    debugPrint('TaskRepository: Task data: ${task.title}');
     final data = task.toFirestore();
-    print('TaskRepository: Firestore data prepared');
+    debugPrint('TaskRepository: Firestore data prepared');
     final docRef = await _tasksCollection.add(data);
-    print('TaskRepository: Task created with ID: ${docRef.id}');
-    print('TaskRepository: Full path: users/$userId/tasks/${docRef.id}');
+    debugPrint('TaskRepository: Task created with ID: ${docRef.id}');
+    debugPrint('TaskRepository: Full path: users/$userId/tasks/${docRef.id}');
     return docRef.id;
   }
 

@@ -5,6 +5,7 @@ import '../../providers/habit_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/habit.dart';
 import '../../core/constants/enums.dart';
+import '../statistics/habit_statistics_screen.dart';
 
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({super.key});
@@ -42,7 +43,7 @@ class _HabitsScreenState extends State<HabitsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -75,7 +76,12 @@ class _HabitsScreenState extends State<HabitsScreen> {
                       IconButton(
                         icon: const Icon(Icons.analytics_outlined),
                         onPressed: () {
-                          // TODO: Show habit statistics
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const HabitStatisticsScreen(),
+                            ),
+                          );
                         },
                       ),
                     ],
@@ -168,9 +174,10 @@ class _CategorySection extends StatelessWidget {
                     children: [
                       Text(
                         domain.displayName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -179,7 +186,11 @@ class _CategorySection extends StatelessWidget {
                         domain.description,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[600],
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.color
+                              ?.withOpacity(0.7),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -202,7 +213,11 @@ class _CategorySection extends StatelessWidget {
               child: Text(
                 'No habits yet. Tap + to add one.',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.color
+                      ?.withOpacity(0.7),
                   fontSize: 14,
                 ),
               ),
@@ -313,11 +328,12 @@ class _HabitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Theme.of(context).cardColor : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -350,9 +366,10 @@ class _HabitCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   habit.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -370,31 +387,55 @@ class _HabitCard extends StatelessWidget {
               habit.description,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.color
+                    ?.withOpacity(0.7),
               ),
             ),
           ],
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+              Icon(Icons.calendar_today,
+                  size: 14,
+                  color: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.color
+                      ?.withOpacity(0.7)),
               const SizedBox(width: 4),
               Text(
                 _formatWeekDays(),
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[600],
+                  color: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.color
+                      ?.withOpacity(0.7),
                 ),
               ),
               if (_formatTime().isNotEmpty) ...[
                 const SizedBox(width: 16),
-                Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
+                Icon(Icons.access_time,
+                    size: 14,
+                    color: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.color
+                        ?.withOpacity(0.7)),
                 const SizedBox(width: 4),
                 Text(
                   _formatTime(),
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.color
+                        ?.withOpacity(0.7),
                   ),
                 ),
               ],

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Life domains for habit categorization
 enum LifeDomain {
   soulAndSpirit('Soul and Spirit',
@@ -18,6 +20,22 @@ enum LifeDomain {
 
   const LifeDomain(
       this.displayName, this.description, this.emoji, this.colorValue);
+
+  // Icon representation using Material Icons
+  IconData get icon {
+    switch (this) {
+      case LifeDomain.soulAndSpirit:
+        return Icons.self_improvement;
+      case LifeDomain.healthAndEnergy:
+        return Icons.fitness_center;
+      case LifeDomain.familyAndRelationships:
+        return Icons.favorite;
+      case LifeDomain.workAndCalling:
+        return Icons.work;
+      case LifeDomain.moneyAndWealth:
+        return Icons.attach_money;
+    }
+  }
 }
 
 /// Task status

@@ -1,0 +1,48 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="scale" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e0e7ff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background with rounded corners -->
+  <rect width="1024" height="1024" rx="226" fill="url(#bg)"/>
+  
+  <!-- Balance scale -->
+  <!-- Center pole -->
+  <rect x="482" y="280" width="60" height="340" rx="30" fill="url(#scale)"/>
+  
+  <!-- Base -->
+  <ellipse cx="512" cy="640" rx="180" ry="40" fill="url(#scale)" opacity="0.9"/>
+  
+  <!-- Cross beam -->
+  <rect x="200" y="330" width="624" height="50" rx="25" fill="url(#scale)"/>
+  
+  <!-- Left chain -->
+  <line x1="280" y1="380" x2="280" y2="480" stroke="white" stroke-width="16" stroke-linecap="round"/>
+  <line x1="300" y1="380" x2="300" y2="480" stroke="white" stroke-width="16" stroke-linecap="round"/>
+  
+  <!-- Right chain -->
+  <line x1="724" y1="380" x2="724" y2="480" stroke="white" stroke-width="16" stroke-linecap="round"/>
+  <line x1="744" y1="380" x2="744" y2="480" stroke="white" stroke-width="16" stroke-linecap="round"/>
+  
+  <!-- Left pan -->
+  <ellipse cx="290" cy="480" rx="130" ry="20" fill="url(#scale)"/>
+  <path d="M 160 480 Q 160 530, 290 540 Q 420 530, 420 480 Z" fill="url(#scale)" opacity="0.95"/>
+  
+  <!-- Right pan -->
+  <ellipse cx="734" cy="480" rx="130" ry="20" fill="url(#scale)"/>
+  <path d="M 604 480 Q 604 530, 734 540 Q 864 530, 864 480 Z" fill="url(#scale)" opacity="0.95"/>
+  
+  <!-- Top ornament -->
+  <circle cx="512" cy="280" r="35" fill="white" opacity="0.95"/>
+  
+  <!-- Text -->
+  <text x="512" y="780" font-family="system-ui, -apple-system, sans-serif" font-size="140" font-weight="700" fill="white" text-anchor="middle">Axis</text>
+</svg>

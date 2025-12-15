@@ -16,7 +16,7 @@ class _DailyInsightSectionState extends State<DailyInsightSection> {
   @override
   Widget build(BuildContext context) {
     final dailySummaryProvider = context.watch<DailySummaryProvider>();
-    
+
     // Get yesterday's date to show yesterday's summary as today's motivation
     final yesterday = DateTime.now().subtract(const Duration(days: 1));
 
@@ -185,7 +185,7 @@ class _NoSummaryCard extends StatelessWidget {
 
 class _ErrorCard extends StatelessWidget {
   final String error;
-  
+
   const _ErrorCard({required this.error});
 
   @override
@@ -319,7 +319,7 @@ class _InsightCard extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.lightbulb_outline,
                         size: 16,
                         color: AppColors.primary,

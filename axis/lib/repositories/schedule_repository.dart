@@ -158,11 +158,6 @@ class ScheduleRepository {
       for (final doc in snapshot.docs) {
         final existingSchedule = Schedule.fromFirestore(doc);
 
-        // Calculate the time difference for future occurrences
-        final daysDiff = existingSchedule.scheduledDate
-            .difference(schedule.scheduledDate)
-            .inDays;
-
         // Apply the same time of day from the edited schedule to each future date
         final updatedStartTime = DateTime(
           existingSchedule.scheduledDate.year,

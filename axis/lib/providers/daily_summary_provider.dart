@@ -38,7 +38,7 @@ class DailySummaryProvider extends ChangeNotifier {
       _todaySummary = await _repository.getTodaySummary();
     } catch (e) {
       _error = e.toString();
-      print('DailySummaryProvider: Error loading today summary: $e');
+      debugPrint('DailySummaryProvider: Error loading today summary: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -50,7 +50,7 @@ class DailySummaryProvider extends ChangeNotifier {
     try {
       return await _repository.getSummaryForDate(date);
     } catch (e) {
-      print('DailySummaryProvider: Error getting summary for date: $e');
+      debugPrint('DailySummaryProvider: Error getting summary for date: $e');
       return null;
     }
   }
@@ -70,7 +70,7 @@ class DailySummaryProvider extends ChangeNotifier {
       return _recentSummaries;
     } catch (e) {
       _error = e.toString();
-      print('DailySummaryProvider: Error getting summaries in range: $e');
+      debugPrint('DailySummaryProvider: Error getting summaries in range: $e');
       return [];
     } finally {
       _isLoading = false;

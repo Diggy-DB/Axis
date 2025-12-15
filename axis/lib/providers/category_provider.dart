@@ -4,7 +4,7 @@ import '../repositories/category_repository.dart';
 
 class CategoryProvider extends ChangeNotifier {
   final CategoryRepository _repository;
-  
+
   List<models.Category> _categories = [];
   bool _isLoading = false;
   String? _error;
@@ -31,7 +31,7 @@ class CategoryProvider extends ChangeNotifier {
       _categories = await _repository.getCategories();
     } catch (e) {
       _error = e.toString();
-      print('CategoryProvider: Error loading categories: $e');
+      debugPrint('CategoryProvider: Error loading categories: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -53,7 +53,7 @@ class CategoryProvider extends ChangeNotifier {
       return id;
     } catch (e) {
       _error = e.toString();
-      print('CategoryProvider: Error creating category: $e');
+      debugPrint('CategoryProvider: Error creating category: $e');
       notifyListeners();
       return null;
     }
@@ -67,7 +67,7 @@ class CategoryProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _error = e.toString();
-      print('CategoryProvider: Error updating category: $e');
+      debugPrint('CategoryProvider: Error updating category: $e');
       notifyListeners();
       return false;
     }
@@ -81,7 +81,7 @@ class CategoryProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _error = e.toString();
-      print('CategoryProvider: Error deleting category: $e');
+      debugPrint('CategoryProvider: Error deleting category: $e');
       notifyListeners();
       return false;
     }

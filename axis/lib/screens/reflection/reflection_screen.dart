@@ -26,34 +26,36 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
       // Configure Firebase Functions to use the correct region if needed
       final functions = FirebaseFunctions.instanceFor(region: 'us-central1');
       final callable = functions.httpsCallable('generateInsightsForUser');
-      
+
       final result = await callable.call();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.data['message'] ?? 'AI insights generated successfully!'),
+            content: Text(result.data['message'] ??
+                'AI insights generated successfully!'),
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // The reflection provider automatically updates via streams
         // No manual refresh needed
       }
     } on FirebaseFunctionsException catch (e) {
-      print('Firebase Functions Error: ${e.code} - ${e.message}');
-      print('Details: ${e.details}');
-      
+      debugPrint('Firebase Functions Error: ${e.code} - ${e.message}');
+      debugPrint('Details: ${e.details}');
+
       if (mounted) {
         String errorMessage = 'Error generating insights';
         if (e.code == 'not-found') {
-          errorMessage = 'No reflection found for yesterday. Please add a reflection first.';
+          errorMessage =
+              'No reflection found for yesterday. Please add a reflection first.';
         } else if (e.code == 'unauthenticated') {
           errorMessage = 'Please sign in to generate insights.';
         } else if (e.message != null) {
           errorMessage = 'Error: ${e.message}';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -63,7 +65,7 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
         );
       }
     } catch (e) {
-      print('Unexpected error: $e');
+      debugPrint('Unexpected error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -353,7 +355,7 @@ class _CompletedTasksSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.check_circle, color: AppColors.success),
+                const Icon(Icons.check_circle, color: AppColors.success),
                 const SizedBox(width: 8),
                 Text(
                   'Completed Tasks',
@@ -430,7 +432,7 @@ class _ActualScheduleSection extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.schedule, color: AppColors.primary),
+                    const Icon(Icons.schedule, color: AppColors.primary),
                     const SizedBox(width: 8),
                     Text(
                       'What I Actually Did',
@@ -621,7 +623,7 @@ class _ReflectionTextSection extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.auto_awesome,
+                        const Icon(Icons.auto_awesome,
                             size: 16, color: AppColors.primary),
                         const SizedBox(width: 4),
                         Text(
@@ -1081,7 +1083,7 @@ class _ScheduleEditorScreenState extends State<_ScheduleEditorScreen> {
                           leading: CircleAvatar(
                             backgroundColor:
                                 AppColors.primary.withValues(alpha: 0.2),
-                            child: Icon(Icons.schedule,
+                            child: const Icon(Icons.schedule,
                                 color: AppColors.primary, size: 20),
                           ),
                           title: Text(entry.activity),
@@ -1206,8 +1208,6 @@ class _ScheduleEntryDialogState extends State<_ScheduleEntryDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return AlertDialog(
       title: const Text('Schedule Entry'),
       content: Form(

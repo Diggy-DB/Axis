@@ -59,18 +59,18 @@ class TaskProvider extends ChangeNotifier {
 
   Future<bool> createTask(Task task) async {
     if (_repository == null) {
-      print('TaskProvider: Repository is null - user not authenticated');
+      debugPrint('TaskProvider: Repository is null - user not authenticated');
       _error = 'User not authenticated';
       notifyListeners();
       return false;
     }
     try {
-      print('TaskProvider: Creating task: ${task.title}');
+      debugPrint('TaskProvider: Creating task: ${task.title}');
       final taskId = await _repository!.createTask(task);
-      print('TaskProvider: Task created successfully with ID: $taskId');
+      debugPrint('TaskProvider: Task created successfully with ID: $taskId');
       return true;
     } catch (e) {
-      print('TaskProvider: Error creating task: $e');
+      debugPrint('TaskProvider: Error creating task: $e');
       _error = 'Failed to create task: $e';
       notifyListeners();
       return false;
