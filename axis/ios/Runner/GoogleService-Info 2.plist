@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>566044888088-i7dnn3s2vsceonr0v3r7hi31el5nvhbv.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.566044888088-i7dnn3s2vsceonr0v3r7hi31el5nvhbv</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDMZCJaQD4oGXub5CN9JA94eKAGQIADeYo</string>
+	<key>GCM_SENDER_ID</key>
+	<string>566044888088</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.diggy.axis</string>
+	<key>PROJECT_ID</key>
+	<string>axis-90942</string>
+	<key>STORAGE_BUCKET</key>
+	<string>axis-90942.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:566044888088:ios:f2506faf0d7286a892c76d</string>
+</dict>
+</plist>
