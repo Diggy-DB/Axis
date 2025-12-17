@@ -85,7 +85,7 @@ class _TasksScreenState extends State<TasksScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'Today'),
+            Tab(text: 'Incomplete'),
             Tab(text: 'Completed'),
             Tab(text: 'All'),
           ],
@@ -94,7 +94,7 @@ class _TasksScreenState extends State<TasksScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _TodayTasksView(onRefresh: _refreshTasks),
+          _IncompleteTasksView(onRefresh: _refreshTasks),
           _CompletedTasksView(onRefresh: _refreshTasks),
           _AllTasksView(onRefresh: _refreshTasks),
         ],
@@ -112,22 +112,52 @@ class _TasksScreenState extends State<TasksScreen>
   }
 }
 
-class _TodayTasksView extends StatelessWidget {
+class _IncompleteTasksView extends StatelessWidget {
   final Future<void> Function() onRefresh;
 
-  const _TodayTasksView({required this.onRefresh});
+  const _IncompleteTasksView({required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final taskProvider = Provider.of<TaskProvider>(context);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
-    // Get all incomplete tasks including overdue ones
-    final allTasks = [
+    // Get all incomplete tasks
+    final allIncompleteTasks = [
       ...taskProvider.overdueTasks,
       ...taskProvider.todayTasks,
       ...taskProvider.upcomingTasks
-    ].where((task) => task.status != TaskStatus.completed).toList()
+    ].where((task) => task.status != TaskStatus.completed).toList();
+
+    // Separate overdue tasks (tasks with dueDate in the past)
+    final overdueTasks = allIncompleteTasks.where((task) {
+      if (task.dueDate == null) return false;
+      final dueDate = DateTime(
+        task.dueDate!.year,
+        task.dueDate!.month,
+        task.dueDate!.day,
+      );
+      return dueDate.isBefore(today);
+    }).toList()
+      ..sort((a, b) {
+        if (a.dueDate == null && b.dueDate == null) return 0;
+        if (a.dueDate == null) return 1;
+        if (b.dueDate == null) return -1;
+        return a.dueDate!.compareTo(b.dueDate!);
+      });
+
+    // Get remaining incomplete tasks sorted by scheduled date
+    final remainingTasks = allIncompleteTasks.where((task) {
+      if (task.dueDate == null) return true;
+      final dueDate = DateTime(
+        task.dueDate!.year,
+        task.dueDate!.month,
+        task.dueDate!.day,
+      );
+      return !dueDate.isBefore(today);
+    }).toList()
       ..sort((a, b) {
         if (a.scheduledDate == null && b.scheduledDate == null) return 0;
         if (a.scheduledDate == null) return 1;
@@ -135,9 +165,9 @@ class _TodayTasksView extends StatelessWidget {
         return a.scheduledDate!.compareTo(b.scheduledDate!);
       });
 
-    // Group tasks by date
+    // Group remaining tasks by date
     final Map<DateTime, List<Task>> tasksByDate = {};
-    for (var task in allTasks) {
+    for (var task in remainingTasks) {
       if (task.scheduledDate != null) {
         final dateKey = DateTime(
           task.scheduledDate!.year,
@@ -150,9 +180,156 @@ class _TodayTasksView extends StatelessWidget {
 
     final sortedDates = tasksByDate.keys.toList()..sort();
 
+    if (allIncompleteTasks.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView(
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height - 200,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 64,
+                      color: theme.disabledColor,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No incomplete tasks',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.disabledColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Add tasks from the calendar or create new ones',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.disabledColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: onRefresh,
-      child: sortedDates.isEmpty
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Overdue section
+          if (overdueTasks.isNotEmpty) ...[
+            Row(
+              children: [
+                Icon(Icons.warning_amber_rounded,
+                    color: theme.colorScheme.error, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  'Overdue',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              '${overdueTasks.length} task${overdueTasks.length == 1 ? '' : 's'}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.error.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...overdueTasks
+                .map((task) => _TaskCard(task: task, isOverdue: true)),
+            const SizedBox(height: 32),
+          ],
+
+          // Regular tasks by date
+          ...sortedDates.asMap().entries.map((entry) {
+            final index = entry.key;
+            final date = entry.value;
+            final tasks = tasksByDate[date]!;
+            final isToday = date.year == now.year &&
+                date.month == now.month &&
+                date.day == now.day;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (index > 0 || overdueTasks.isNotEmpty)
+                  const SizedBox(height: 24),
+                Text(
+                  isToday
+                      ? 'Today - ${DateFormat('MMMM d').format(date)}'
+                      : DateFormat('EEEE, MMMM d').format(date),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '${tasks.length} task${tasks.length == 1 ? '' : 's'}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.secondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...tasks.map((task) => _TaskCard(task: task)),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _OverdueTasksView extends StatelessWidget {
+  final Future<void> Function() onRefresh;
+
+  const _OverdueTasksView({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final taskProvider = Provider.of<TaskProvider>(context);
+
+    // Get overdue tasks (tasks with deadline in the past that are incomplete)
+    final now = DateTime.now();
+    final overdueTasks = [
+      ...taskProvider.overdueTasks,
+      ...taskProvider.todayTasks,
+      ...taskProvider.upcomingTasks
+    ].where((task) {
+      if (task.status == TaskStatus.completed) return false;
+      if (task.dueDate == null) return false;
+
+      // Check if the due date has passed
+      final dueDate = DateTime(
+        task.dueDate!.year,
+        task.dueDate!.month,
+        task.dueDate!.day,
+      );
+      final today = DateTime(now.year, now.month, now.day);
+      return dueDate.isBefore(today);
+    }).toList()
+      ..sort((a, b) {
+        if (a.dueDate == null && b.dueDate == null) return 0;
+        if (a.dueDate == null) return 1;
+        if (b.dueDate == null) return -1;
+        return a.dueDate!.compareTo(b.dueDate!);
+      });
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: overdueTasks.isEmpty
           ? ListView(
               children: [
                 SizedBox(
@@ -168,14 +345,14 @@ class _TodayTasksView extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No incomplete tasks',
+                          'No overdue tasks',
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: theme.disabledColor,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Add tasks from the calendar or create new ones',
+                          'Great job staying on top of your tasks!',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.disabledColor,
                           ),
@@ -188,36 +365,10 @@ class _TodayTasksView extends StatelessWidget {
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: sortedDates.length,
+              itemCount: overdueTasks.length,
               itemBuilder: (context, index) {
-                final date = sortedDates[index];
-                final tasks = tasksByDate[date]!;
-                final isToday = date.year == DateTime.now().year &&
-                    date.month == DateTime.now().month &&
-                    date.day == DateTime.now().day;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (index > 0) const SizedBox(height: 24),
-                    Text(
-                      isToday
-                          ? 'Today - ${DateFormat('MMMM d').format(date)}'
-                          : DateFormat('EEEE, MMMM d').format(date),
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '${tasks.length} task${tasks.length == 1 ? '' : 's'}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.secondary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ...tasks.map((task) => _TaskCard(task: task)),
-                  ],
-                );
+                final task = overdueTasks[index];
+                return _TaskCard(task: task, isOverdue: true);
               },
             ),
     );
@@ -234,14 +385,21 @@ class _CompletedTasksView extends StatelessWidget {
     final theme = Theme.of(context);
     final taskProvider = Provider.of<TaskProvider>(context);
 
+    // Get all completed tasks from all sources
     final allTasks = [
+      ...taskProvider.overdueTasks,
       ...taskProvider.todayTasks,
       ...taskProvider.upcomingTasks
     ];
     final completedTasks =
         allTasks.where((task) => task.status == TaskStatus.completed).toList()
           ..sort((a, b) {
-            if (a.completedAt == null || b.completedAt == null) return 0;
+            // Sort by completion date (most recent first)
+            if (a.completedAt == null && b.completedAt == null) {
+              return b.updatedAt.compareTo(a.updatedAt);
+            }
+            if (a.completedAt == null) return 1;
+            if (b.completedAt == null) return -1;
             return b.completedAt!.compareTo(a.completedAt!);
           });
 
@@ -294,16 +452,14 @@ class _AllTasksView extends StatelessWidget {
     final theme = Theme.of(context);
     final taskProvider = Provider.of<TaskProvider>(context);
 
-    final allTasks = [...taskProvider.todayTasks, ...taskProvider.upcomingTasks]
-      ..sort((a, b) {
-        // Sort by status first (pending before completed)
-        if (a.status != b.status) {
-          return a.status == TaskStatus.completed ? 1 : -1;
-        }
-        // Then by scheduled date or due date
-        final aDate = a.scheduledDate ?? a.dueDate ?? a.createdAt;
-        final bDate = b.scheduledDate ?? b.dueDate ?? b.createdAt;
-        return aDate.compareTo(bDate);
+    // Get all tasks from all sources
+    final allTasks = [
+      ...taskProvider.overdueTasks,
+      ...taskProvider.todayTasks,
+      ...taskProvider.upcomingTasks
+    ]..sort((a, b) {
+        // Sort by most recent update/creation (most recent first)
+        return b.updatedAt.compareTo(a.updatedAt);
       });
 
     return RefreshIndicator(
@@ -353,8 +509,9 @@ class _AllTasksView extends StatelessWidget {
 
 class _TaskCard extends StatelessWidget {
   final Task task;
+  final bool isOverdue;
 
-  const _TaskCard({required this.task});
+  const _TaskCard({required this.task, this.isOverdue = false});
 
   @override
   Widget build(BuildContext context) {
@@ -364,6 +521,18 @@ class _TaskCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: isOverdue && !isCompleted
+          ? theme.colorScheme.errorContainer.withValues(alpha: 0.1)
+          : null,
+      shape: isOverdue && !isCompleted
+          ? RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: theme.colorScheme.error.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            )
+          : null,
       child: InkWell(
         onTap: () => _showTaskDetails(context, task),
         borderRadius: BorderRadius.circular(12),
@@ -374,7 +543,7 @@ class _TaskCard extends StatelessWidget {
               // Checkbox
               Checkbox(
                 value: isCompleted,
-                onChanged: (value) {
+                onChanged: (value) async {
                   final updatedTask = Task(
                     id: task.id,
                     title: task.title,
@@ -392,10 +561,16 @@ class _TaskCard extends StatelessWidget {
                     createdAt: task.createdAt,
                     updatedAt: DateTime.now(),
                   );
-                  if (value == true) {
-                    taskProvider.updateTask(updatedTask);
-                  } else {
-                    taskProvider.updateTask(updatedTask);
+
+                  final success = await taskProvider.updateTask(updatedTask);
+
+                  if (context.mounted && !success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Failed to update task'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                   }
                 },
               ),

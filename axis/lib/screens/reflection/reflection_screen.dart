@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:table_calendar/table_calendar.dart';
 import '../../providers/reflection_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../models/reflection.dart';
@@ -19,6 +20,7 @@ class ReflectionScreen extends StatefulWidget {
 class _ReflectionScreenState extends State<ReflectionScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _isGeneratingInsights = false;
+  bool _showCalendar = false;
 
   Future<void> _generateInsights() async {
     setState(() => _isGeneratingInsights = true);
@@ -105,8 +107,9 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
               onPressed: _generateInsights,
             ),
           IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () => _selectDate(context),
+            icon: Icon(
+                _showCalendar ? Icons.calendar_today : Icons.calendar_month),
+            onPressed: () => setState(() => _showCalendar = !_showCalendar),
           ),
         ],
       ),
@@ -117,23 +120,21 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
               selectedDate: _selectedDate,
               onDateChanged: (date) => setState(() => _selectedDate = date),
             ),
+            if (_showCalendar)
+              _CalendarView(
+                selectedDate: _selectedDate,
+                onDateSelected: (date) {
+                  setState(() {
+                    _selectedDate = date;
+                    _showCalendar = false;
+                  });
+                },
+              ),
             _ReflectionContent(selectedDate: _selectedDate),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
-    }
   }
 }
 
@@ -206,6 +207,92 @@ class _DateSelector extends StatelessWidget {
   }
 }
 
+class _CalendarView extends StatelessWidget {
+  final DateTime selectedDate;
+  final Function(DateTime) onDateSelected;
+
+  const _CalendarView({
+    required this.selectedDate,
+    required this.onDateSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final reflectionProvider = Provider.of<ReflectionProvider>(context);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: TableCalendar(
+          firstDay: DateTime(2020),
+          lastDay: DateTime.now(),
+          focusedDay: selectedDate,
+          selectedDayPredicate: (day) => isSameDay(day, selectedDate),
+          onDaySelected: (selectedDay, focusedDay) {
+            if (!selectedDay.isAfter(DateTime.now())) {
+              onDateSelected(selectedDay);
+            }
+          },
+          calendarFormat: CalendarFormat.month,
+          availableCalendarFormats: const {
+            CalendarFormat.month: 'Month',
+          },
+          headerStyle: HeaderStyle(
+            formatButtonVisible: false,
+            titleCentered: true,
+            titleTextStyle: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ) ??
+                const TextStyle(),
+          ),
+          calendarStyle: CalendarStyle(
+            todayDecoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            selectedDecoration: const BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+            ),
+            markersMaxCount: 1,
+            markerDecoration: const BoxDecoration(
+              color: AppColors.success,
+              shape: BoxShape.circle,
+            ),
+          ),
+          calendarBuilders: CalendarBuilders(
+            markerBuilder: (context, date, events) {
+              // Show a dot if there's a reflection for this date
+              final hasReflection =
+                  reflectionProvider.getReflectionForDate(date) != null;
+              if (hasReflection) {
+                return Positioned(
+                  bottom: 4,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: AppColors.success,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                );
+              }
+              return null;
+            },
+          ),
+          enabledDayPredicate: (day) {
+            // Disable future dates
+            return !day.isAfter(DateTime.now());
+          },
+        ),
+      ),
+    );
+  }
+}
+
 class _ReflectionContent extends StatelessWidget {
   final DateTime selectedDate;
 
@@ -216,30 +303,29 @@ class _ReflectionContent extends StatelessWidget {
     final reflectionProvider = Provider.of<ReflectionProvider>(context);
     final reflection = reflectionProvider.getReflectionForDate(selectedDate);
 
-    if (reflection == null) {
-      return _EmptyReflection(
-        selectedDate: selectedDate,
-        onCreatePressed: () => _showReflectionEditor(context, null),
-      );
-    }
-
     return Column(
       children: [
         _CompletedTasksSection(
-          completedTaskIds: reflection.completedTaskIds,
+          completedTaskIds: reflection?.completedTaskIds ?? [],
           date: selectedDate,
         ),
         const SizedBox(height: 16),
         _ActualScheduleSection(
-          actualSchedule: reflection.actualSchedule,
+          actualSchedule: reflection?.actualSchedule ?? [],
           date: selectedDate,
           onEdit: () => _showScheduleEditor(context, reflection),
         ),
         const SizedBox(height: 16),
-        _ReflectionTextSection(
-          reflection: reflection,
-          onEdit: () => _showReflectionEditor(context, reflection),
-        ),
+        if (reflection != null)
+          _ReflectionTextSection(
+            reflection: reflection,
+            onEdit: () => _showReflectionEditor(context, reflection),
+          )
+        else
+          _EmptyReflectionText(
+            selectedDate: selectedDate,
+            onCreatePressed: () => _showReflectionEditor(context, null),
+          ),
         const SizedBox(height: 16),
       ],
     );
@@ -257,24 +343,49 @@ class _ReflectionContent extends StatelessWidget {
     );
   }
 
-  void _showScheduleEditor(BuildContext context, Reflection reflection) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => _ScheduleEditorScreen(
-          date: selectedDate,
-          existingReflection: reflection,
+  void _showScheduleEditor(BuildContext context, Reflection? reflection) async {
+    // Create a reflection if it doesn't exist
+    if (reflection == null) {
+      final newReflection = Reflection(
+        id: '',
+        date: DateTime(selectedDate.year, selectedDate.month, selectedDate.day),
+        text: '',
+        tags: [],
+        completedTaskIds: [],
+        actualSchedule: [],
+        aiPromptForNextDay: null,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => _ScheduleEditorScreen(
+            date: selectedDate,
+            existingReflection: newReflection,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => _ScheduleEditorScreen(
+            date: selectedDate,
+            existingReflection: reflection,
+          ),
+        ),
+      );
+    }
   }
 }
 
-class _EmptyReflection extends StatelessWidget {
+class _EmptyReflectionText extends StatelessWidget {
   final DateTime selectedDate;
   final VoidCallback onCreatePressed;
 
-  const _EmptyReflection({
+  const _EmptyReflectionText({
     required this.selectedDate,
     required this.onCreatePressed,
   });
@@ -286,31 +397,45 @@ class _EmptyReflection extends StatelessWidget {
         selectedDate.month == DateTime.now().month &&
         selectedDate.day == DateTime.now().day;
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Center(
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(32),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.edit_note,
-              size: 64,
-              color: theme.disabledColor,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isToday
-                  ? 'No reflection yet for today'
-                  : 'No reflection for this date',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.disabledColor,
-              ),
+              size: 72,
+              color: theme.colorScheme.primary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
+            Text(
+              isToday
+                  ? 'Add a reflection for today'
+                  : 'Add a reflection for this date',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Reflect on your day, mood, and accomplishments',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.disabledColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
               onPressed: onCreatePressed,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Reflection'),
+              icon: const Icon(Icons.add, size: 24),
+              label: const Text('Write Reflection',
+                  style: TextStyle(fontSize: 16)),
+              style: FilledButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              ),
             ),
           ],
         ),
@@ -356,10 +481,10 @@ class _CompletedTasksSectionState extends State<_CompletedTasksSection> {
     try {
       final taskProvider = Provider.of<TaskProvider>(context, listen: false);
 
-      // Get all tasks for this date
-      final allTasks = taskProvider.getTasksForDate(widget.date);
+      // Get ALL tasks and filter by completedAt date
+      final allTasks = taskProvider.allTasks;
 
-      // Filter to only completed tasks on this specific date
+      // Filter to only tasks completed on this specific date
       final completedTasks = allTasks.where((task) {
         if (task.status != TaskStatus.completed) return false;
         if (task.completedAt == null) return false;
@@ -515,11 +640,22 @@ class _ActualScheduleSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             if (actualSchedule.isEmpty)
-              Text(
-                'No schedule filled yet. Tap edit to add what you actually did today.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.disabledColor,
-                ),
+              Column(
+                children: [
+                  Text(
+                    'Track what you actually did during the day with time ranges.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.disabledColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Time Entry'),
+                  ),
+                ],
               )
             else
               _HourlyScheduleView(entries: actualSchedule),

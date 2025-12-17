@@ -20,6 +20,8 @@ class Habit {
   final DateTime? startTime; // Time of day to start
   final DateTime? endTime; // Time of day to end
   final List<int> weekDays; // 1=Monday, 2=Tuesday, ..., 7=Sunday
+  final bool notifyEnabled; // Whether to send notifications
+  final int notifyMinutesBefore; // Minutes before start time to notify
 
   Habit({
     required this.id,
@@ -39,6 +41,8 @@ class Habit {
     this.startTime,
     this.endTime,
     this.weekDays = const [],
+    this.notifyEnabled = false,
+    this.notifyMinutesBefore = 5,
   });
 
   factory Habit.fromFirestore(DocumentSnapshot doc) {
@@ -74,6 +78,8 @@ class Habit {
           : null,
       weekDays:
           data['weekDays'] != null ? List<int>.from(data['weekDays']) : [],
+      notifyEnabled: data['notifyEnabled'] ?? false,
+      notifyMinutesBefore: data['notifyMinutesBefore'] ?? 5,
     );
   }
 
@@ -96,6 +102,8 @@ class Habit {
       'startTime': startTime != null ? Timestamp.fromDate(startTime!) : null,
       'endTime': endTime != null ? Timestamp.fromDate(endTime!) : null,
       'weekDays': weekDays,
+      'notifyEnabled': notifyEnabled,
+      'notifyMinutesBefore': notifyMinutesBefore,
     };
   }
 
@@ -115,6 +123,8 @@ class Habit {
     DateTime? startTime,
     DateTime? endTime,
     List<int>? weekDays,
+    bool? notifyEnabled,
+    int? notifyMinutesBefore,
   }) {
     return Habit(
       id: id,
@@ -134,6 +144,8 @@ class Habit {
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       weekDays: weekDays ?? this.weekDays,
+      notifyEnabled: notifyEnabled ?? this.notifyEnabled,
+      notifyMinutesBefore: notifyMinutesBefore ?? this.notifyMinutesBefore,
     );
   }
 }

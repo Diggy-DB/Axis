@@ -5,24 +5,69 @@ import '../repositories/task_repository.dart';
 class TaskProvider extends ChangeNotifier {
   TaskRepository? _repository;
 
-  List<Task> _todayTasks = [];
-  List<Task> _upcomingTasks = [];
-  List<Task> _overdueTasks = [];
+  List<Task> _allTasks = [];
   final bool _isLoading = false;
   String? _error;
 
-  List<Task> get todayTasks => _todayTasks;
-  List<Task> get upcomingTasks => _upcomingTasks;
-  List<Task> get overdueTasks => _overdueTasks;
+  List<Task> get allTasks => _allTasks;
+
+  // Compatibility getters for existing code
+  List<Task> get todayTasks {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    return _allTasks.where((task) {
+      if (task.scheduledDate == null) return false;
+      final taskDate = DateTime(
+        task.scheduledDate!.year,
+        task.scheduledDate!.month,
+        task.scheduledDate!.day,
+      );
+      return taskDate.isAtSameMomentAs(today) ||
+          (taskDate.isAfter(today) && taskDate.isBefore(tomorrow));
+    }).toList();
+  }
+
+  List<Task> get upcomingTasks {
+    final now = DateTime.now();
+    final tomorrow =
+        DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+
+    return _allTasks.where((task) {
+      if (task.scheduledDate == null) return false;
+      final taskDate = DateTime(
+        task.scheduledDate!.year,
+        task.scheduledDate!.month,
+        task.scheduledDate!.day,
+      );
+      return taskDate.isAfter(tomorrow) || taskDate.isAtSameMomentAs(tomorrow);
+    }).toList();
+  }
+
+  List<Task> get overdueTasks {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return _allTasks.where((task) {
+      if (task.scheduledDate == null) return false;
+      final taskDate = DateTime(
+        task.scheduledDate!.year,
+        task.scheduledDate!.month,
+        task.scheduledDate!.day,
+      );
+      return taskDate.isBefore(today);
+    }).toList();
+  }
+
   bool get isLoading => _isLoading;
   String? get error => _error;
 
   /// Get tasks for a specific date
   List<Task> getTasksForDate(DateTime date) {
     final normalizedDate = DateTime(date.year, date.month, date.day);
-    final allTasks = [..._todayTasks, ..._upcomingTasks, ..._overdueTasks];
 
-    return allTasks.where((task) {
+    return _allTasks.where((task) {
       if (task.scheduledDate == null) return false;
       final taskDate = DateTime(
         task.scheduledDate!.year,
@@ -39,9 +84,7 @@ class TaskProvider extends ChangeNotifier {
       _loadTasks();
     } else {
       _repository = null;
-      _todayTasks = [];
-      _upcomingTasks = [];
-      _overdueTasks = [];
+      _allTasks = [];
       notifyListeners();
     }
   }
@@ -49,18 +92,8 @@ class TaskProvider extends ChangeNotifier {
   void _loadTasks() {
     if (_repository == null) return;
 
-    _repository!.streamTodayTasks().listen((tasks) {
-      _todayTasks = tasks;
-      notifyListeners();
-    });
-
-    _repository!.streamUpcomingTasks().listen((tasks) {
-      _upcomingTasks = tasks;
-      notifyListeners();
-    });
-
-    _repository!.streamOverdueTasks().listen((tasks) {
-      _overdueTasks = tasks;
+    _repository!.streamTasks().listen((tasks) {
+      _allTasks = tasks;
       notifyListeners();
     });
   }

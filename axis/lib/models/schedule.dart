@@ -12,6 +12,8 @@ class Schedule {
   final String? location;
   final String? recurrence; // 'none', 'daily', 'weekly', 'biweekly', 'monthly'
   final String? recurrenceId; // Links recurring schedules together
+  final bool notifyEnabled; // Whether to send notifications
+  final int notifyMinutesBefore; // Minutes before start time to notify
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -27,6 +29,8 @@ class Schedule {
     this.location,
     this.recurrence,
     this.recurrenceId,
+    this.notifyEnabled = false,
+    this.notifyMinutesBefore = 5,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -45,6 +49,8 @@ class Schedule {
       location: data['location'],
       recurrence: data['recurrence'],
       recurrenceId: data['recurrenceId'],
+      notifyEnabled: data['notifyEnabled'] ?? false,
+      notifyMinutesBefore: data['notifyMinutesBefore'] ?? 5,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
@@ -62,6 +68,8 @@ class Schedule {
       'location': location,
       'recurrence': recurrence,
       'recurrenceId': recurrenceId,
+      'notifyEnabled': notifyEnabled,
+      'notifyMinutesBefore': notifyMinutesBefore,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -79,6 +87,8 @@ class Schedule {
     String? location,
     String? recurrence,
     String? recurrenceId,
+    bool? notifyEnabled,
+    int? notifyMinutesBefore,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -94,6 +104,8 @@ class Schedule {
       location: location ?? this.location,
       recurrence: recurrence ?? this.recurrence,
       recurrenceId: recurrenceId ?? this.recurrenceId,
+      notifyEnabled: notifyEnabled ?? this.notifyEnabled,
+      notifyMinutesBefore: notifyMinutesBefore ?? this.notifyMinutesBefore,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../models/habit.dart';
 import '../../core/constants/enums.dart';
 import '../statistics/habit_statistics_screen.dart';
+import '../../services/notification_service.dart';
 
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({super.key});
@@ -517,6 +518,8 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
   final Set<int> _selectedDays = {};
+  bool _notifyEnabled = false;
+  int _notifyMinutesBefore = 5;
   bool _isLoading = false;
 
   @override
@@ -550,6 +553,17 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
         _selectedDays.add(day);
       }
     });
+  }
+
+  DateTime _getNextDayOccurrence(int dayOfWeek) {
+    final now = DateTime.now();
+    final currentDayOfWeek = now.weekday;
+    var daysToAdd = dayOfWeek - currentDayOfWeek;
+    if (daysToAdd <= 0) {
+      daysToAdd += 7;
+    }
+    return DateTime(now.year, now.month, now.day)
+        .add(Duration(days: daysToAdd));
   }
 
   Future<void> _saveHabit() async {
@@ -597,10 +611,32 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
         startTime: startDateTime,
         endTime: endDateTime,
         weekDays: _selectedDays.toList()..sort(),
+        notifyEnabled: _notifyEnabled,
+        notifyMinutesBefore: _notifyMinutesBefore,
       );
 
       await Provider.of<HabitProvider>(context, listen: false)
           .createHabit(habit);
+
+      // Schedule notifications if enabled
+      if (_notifyEnabled && habit.id.isNotEmpty) {
+        for (var day in _selectedDays) {
+          final notificationTime = _getNextDayOccurrence(day)
+              .add(
+                Duration(hours: _startTime.hour, minutes: _startTime.minute),
+              )
+              .subtract(Duration(minutes: _notifyMinutesBefore));
+
+          if (notificationTime.isAfter(DateTime.now())) {
+            await NotificationService().scheduleNotification(
+              id: '${habit.id}_$day'.hashCode,
+              title: habit.name,
+              body: 'Time for your ${habit.name} habit',
+              scheduledTime: notificationTime,
+            );
+          }
+        }
+      }
 
       if (mounted) {
         Navigator.pop(context);
@@ -891,6 +927,10 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
   late final Set<int> _selectedDays;
+  late bool _notifyEnabled;
+  late int _notifyMinutesBefore;
+  late bool _isCustomNotifyTime;
+  final _customMinutesController = TextEditingController();
   bool _isLoading = false;
 
   @override
@@ -913,12 +953,21 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
     }
 
     _selectedDays = Set<int>.from(widget.habit.weekDays);
+    _notifyEnabled = widget.habit.notifyEnabled;
+    _notifyMinutesBefore = widget.habit.notifyMinutesBefore;
+    _isCustomNotifyTime =
+        ![0, 5, 10, 15, 30, 60].contains(widget.habit.notifyMinutesBefore);
+    if (_isCustomNotifyTime) {
+      _customMinutesController.text =
+          widget.habit.notifyMinutesBefore.toString();
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _customMinutesController.dispose();
     super.dispose();
   }
 
@@ -946,6 +995,17 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
         _selectedDays.add(day);
       }
     });
+  }
+
+  DateTime _getNextDayOccurrence(int dayOfWeek) {
+    final now = DateTime.now();
+    final currentDayOfWeek = now.weekday;
+    var daysToAdd = dayOfWeek - currentDayOfWeek;
+    if (daysToAdd <= 0) {
+      daysToAdd += 7;
+    }
+    return DateTime(now.year, now.month, now.day)
+        .add(Duration(days: daysToAdd));
   }
 
   Future<void> _saveHabit() async {
@@ -982,11 +1042,39 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
         startTime: startDateTime,
         endTime: endDateTime,
         weekDays: _selectedDays.toList()..sort(),
+        notifyEnabled: _notifyEnabled,
+        notifyMinutesBefore: _notifyMinutesBefore,
         updatedAt: DateTime.now(),
       );
 
       await Provider.of<HabitProvider>(context, listen: false)
           .updateHabit(updatedHabit);
+
+      // Cancel old notifications and schedule new ones if enabled
+      for (var day in [1, 2, 3, 4, 5, 6, 7]) {
+        await NotificationService().cancelNotification(
+          '${widget.habit.id}_$day'.hashCode,
+        );
+      }
+
+      if (_notifyEnabled && updatedHabit.id.isNotEmpty) {
+        for (var day in _selectedDays) {
+          final notificationTime = _getNextDayOccurrence(day)
+              .add(
+                Duration(hours: _startTime.hour, minutes: _startTime.minute),
+              )
+              .subtract(Duration(minutes: _notifyMinutesBefore));
+
+          if (notificationTime.isAfter(DateTime.now())) {
+            await NotificationService().scheduleNotification(
+              id: '${updatedHabit.id}_$day'.hashCode,
+              title: updatedHabit.name,
+              body: 'Time for your ${updatedHabit.name} habit',
+              scheduledTime: notificationTime,
+            );
+          }
+        }
+      }
 
       if (mounted) {
         Navigator.pop(context);
@@ -1227,6 +1315,117 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
                     ),
                   );
                 }),
+              ),
+              const SizedBox(height: 24),
+
+              // Notify me
+              const Text(
+                'Notify me',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Enable notification',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        Switch(
+                          value: _notifyEnabled,
+                          onChanged: (value) =>
+                              setState(() => _notifyEnabled = value),
+                          activeColor: color,
+                        ),
+                      ],
+                    ),
+                    if (_notifyEnabled) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Remind before',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                          DropdownButton<int>(
+                            value:
+                                _isCustomNotifyTime ? -1 : _notifyMinutesBefore,
+                            items: const [
+                              DropdownMenuItem(
+                                  value: 0, child: Text('At event time')),
+                              DropdownMenuItem(value: 5, child: Text('5 min')),
+                              DropdownMenuItem(
+                                  value: 10, child: Text('10 min')),
+                              DropdownMenuItem(
+                                  value: 15, child: Text('15 min')),
+                              DropdownMenuItem(
+                                  value: 30, child: Text('30 min')),
+                              DropdownMenuItem(
+                                  value: 60, child: Text('1 hour')),
+                              DropdownMenuItem(
+                                  value: -1, child: Text('Custom')),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                if (value == -1) {
+                                  _isCustomNotifyTime = true;
+                                } else {
+                                  _isCustomNotifyTime = false;
+                                  _notifyMinutesBefore = value!;
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      if (_isCustomNotifyTime) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _customMinutesController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Minutes before',
+                            hintText: 'Enter minutes',
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                  color: color.withValues(alpha: 0.3)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                  color: color.withValues(alpha: 0.3)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(color: color, width: 2),
+                            ),
+                          ),
+                          onChanged: (value) {
+                            final minutes = int.tryParse(value);
+                            if (minutes != null && minutes > 0) {
+                              setState(() => _notifyMinutesBefore = minutes);
+                            }
+                          },
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 32),
 

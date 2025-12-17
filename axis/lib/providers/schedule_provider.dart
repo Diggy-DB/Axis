@@ -83,6 +83,7 @@ class ScheduleProvider with ChangeNotifier {
     try {
       _error = null;
       final scheduleId = await _repository!.createSchedule(schedule);
+
       // The stream listener will automatically update the list
       return scheduleId;
     } catch (e) {
@@ -100,6 +101,7 @@ class ScheduleProvider with ChangeNotifier {
     try {
       _error = null;
       await _repository!.updateSchedule(schedule);
+
       // The stream listener will automatically update the list
     } catch (e) {
       _error = e.toString();
@@ -116,6 +118,7 @@ class ScheduleProvider with ChangeNotifier {
     try {
       _error = null;
       await _repository!.updateScheduleAndFuture(schedule);
+
       // The stream listener will automatically update the list
     } catch (e) {
       _error = e.toString();
@@ -131,6 +134,7 @@ class ScheduleProvider with ChangeNotifier {
 
     try {
       _error = null;
+
       await _repository!.deleteSchedule(scheduleId);
       // The stream listener will automatically update the list
     } catch (e) {
@@ -147,6 +151,7 @@ class ScheduleProvider with ChangeNotifier {
 
     try {
       _error = null;
+
       await _repository!.deleteScheduleAndFuture(schedule);
       // The stream listener will automatically update the list
     } catch (e) {

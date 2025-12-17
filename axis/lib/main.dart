@@ -15,74 +15,120 @@ import 'providers/theme_provider.dart';
 import 'repositories/daily_summary_repository.dart';
 import 'repositories/category_repository.dart';
 import 'firebase_options.dart';
+import 'services/notification_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+    // Initialize Firebase
+    print('Initializing Firebase...');
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized successfully');
 
-  // Initialize Hive for local caching
-  await Hive.initFlutter();
+    // Initialize Hive for local caching
+    print('Initializing Hive...');
+    await Hive.initFlutter();
+    print('Hive initialized successfully');
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProxyProvider<AuthProvider, HabitProvider>(
-          create: (_) => HabitProvider(),
-          update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, TaskProvider>(
-          create: (_) => TaskProvider(),
-          update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, ScheduleProvider>(
-          create: (_) => ScheduleProvider(),
-          update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, ReflectionProvider>(
-          create: (_) => ReflectionProvider(),
-          update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, DailySummaryProvider>(
-          create: (_) => DailySummaryProvider(
-            repository: DailySummaryRepository(userId: ''),
+    // Initialize Notification Service
+    print('Initializing Notification Service...');
+    await NotificationService().initialize();
+    print('Notification Service initialized successfully');
+
+    print('Starting app...');
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProxyProvider<AuthProvider, HabitProvider>(
+            create: (_) => HabitProvider(),
+            update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
           ),
-          update: (_, auth, previous) {
-            if (auth.user?.id != null) {
-              return DailySummaryProvider(
-                repository: DailySummaryRepository(userId: auth.user!.id),
-              );
-            }
-            return previous ??
-                DailySummaryProvider(
-                  repository: DailySummaryRepository(userId: ''),
-                );
-          },
-        ),
-        ChangeNotifierProxyProvider<AuthProvider, CategoryProvider>(
-          create: (_) => CategoryProvider(
-            repository: CategoryRepository(userId: ''),
+          ChangeNotifierProxyProvider<AuthProvider, TaskProvider>(
+            create: (_) => TaskProvider(),
+            update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
           ),
-          update: (_, auth, previous) {
-            if (auth.user?.id != null) {
-              return CategoryProvider(
-                repository: CategoryRepository(userId: auth.user!.id),
-              );
-            }
-            return previous ??
-                CategoryProvider(
-                  repository: CategoryRepository(userId: ''),
+          ChangeNotifierProxyProvider<AuthProvider, ScheduleProvider>(
+            create: (_) => ScheduleProvider(),
+            update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
+          ),
+          ChangeNotifierProxyProvider<AuthProvider, ReflectionProvider>(
+            create: (_) => ReflectionProvider(),
+            update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
+          ),
+          ChangeNotifierProxyProvider<AuthProvider, DailySummaryProvider>(
+            create: (_) => DailySummaryProvider(
+              repository: DailySummaryRepository(userId: ''),
+            ),
+            update: (_, auth, previous) {
+              if (auth.user?.id != null) {
+                return DailySummaryProvider(
+                  repository: DailySummaryRepository(userId: auth.user!.id),
                 );
-          },
+              }
+              return previous ??
+                  DailySummaryProvider(
+                    repository: DailySummaryRepository(userId: ''),
+                  );
+            },
+          ),
+          ChangeNotifierProxyProvider<AuthProvider, CategoryProvider>(
+            create: (_) => CategoryProvider(
+              repository: CategoryRepository(userId: ''),
+            ),
+            update: (_, auth, previous) {
+              if (auth.user?.id != null) {
+                return CategoryProvider(
+                  repository: CategoryRepository(userId: auth.user!.id),
+                );
+              }
+              return previous ??
+                  CategoryProvider(
+                    repository: CategoryRepository(userId: ''),
+                  );
+            },
+          ),
+          ChangeNotifierProvider(create: (_) => CalendarProvider()),
+        ],
+        child: const AxisApp(),
+      ),
+    );
+  } catch (e, stackTrace) {
+    print('Error during app initialization: $e');
+    print('Stack trace: $stackTrace');
+
+    // Show a basic error app instead of crashing
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'App failed to start',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Error: $e',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        ChangeNotifierProvider(create: (_) => CalendarProvider()),
-      ],
-      child: const AxisApp(),
-    ),
-  );
+      ),
+    );
+  }
 }

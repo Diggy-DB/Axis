@@ -11,6 +11,7 @@ import '../../models/task.dart';
 import '../../models/habit.dart';
 import '../../providers/task_provider.dart';
 import '../../core/constants/enums.dart';
+import '../../services/notification_service.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -198,7 +199,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  'Schedule Today',
+                  _selectedDay.year == DateTime.now().year &&
+                          _selectedDay.month == DateTime.now().month &&
+                          _selectedDay.day == DateTime.now().day
+                      ? 'Schedule Today'
+                      : 'Schedule for ${DateFormat('MMM d').format(_selectedDay)}',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -1030,9 +1035,13 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
   TimeOfDay _endTime = const TimeOfDay(hour: 14, minute: 0);
   String _selectedCategory = 'Design';
   String _recurrence = 'none';
+  bool _notifyEnabled = false;
+  int _notifyMinutesBefore = 5;
+  bool _isCustomNotifyTime = false;
   final _nameController = TextEditingController();
   final _locationController = TextEditingController();
   final _noteController = TextEditingController();
+  final _customMinutesController = TextEditingController();
 
   @override
   void initState() {
@@ -1049,6 +1058,7 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
     _nameController.dispose();
     _locationController.dispose();
     _noteController.dispose();
+    _customMinutesController.dispose();
     super.dispose();
   }
 
@@ -1391,6 +1401,132 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
 
             const SizedBox(height: 32),
 
+            // Notification
+            Text(
+              'Notify me',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.brightness == Brightness.dark
+                    ? theme.cardColor
+                    : const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Enable notification',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: theme.textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                      Switch(
+                        value: _notifyEnabled,
+                        onChanged: (value) =>
+                            setState(() => _notifyEnabled = value),
+                        activeColor: const Color(0xFF6B66FF),
+                      ),
+                    ],
+                  ),
+                  if (_notifyEnabled) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Remind before',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: theme.textTheme.bodyMedium?.color,
+                          ),
+                        ),
+                        DropdownButton<int>(
+                          value:
+                              _isCustomNotifyTime ? -1 : _notifyMinutesBefore,
+                          items: const [
+                            DropdownMenuItem(
+                                value: 0, child: Text('At the time of event')),
+                            DropdownMenuItem(
+                                value: 5, child: Text('5 minutes')),
+                            DropdownMenuItem(
+                                value: 10, child: Text('10 minutes')),
+                            DropdownMenuItem(
+                                value: 15, child: Text('15 minutes')),
+                            DropdownMenuItem(
+                                value: 30, child: Text('30 minutes')),
+                            DropdownMenuItem(value: 60, child: Text('1 hour')),
+                            DropdownMenuItem(value: -1, child: Text('Custom')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              if (value == -1) {
+                                _isCustomNotifyTime = true;
+                              } else {
+                                _isCustomNotifyTime = false;
+                                _notifyMinutesBefore = value!;
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    if (_isCustomNotifyTime) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _customMinutesController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Minutes before',
+                          hintText: 'Enter minutes',
+                          filled: true,
+                          fillColor: theme.brightness == Brightness.dark
+                              ? theme.cardColor.withValues(alpha: 0.5)
+                              : Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                                color: const Color(0xFF6B66FF)
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                                color: const Color(0xFF6B66FF)
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF6B66FF), width: 2),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          final minutes = int.tryParse(value);
+                          if (minutes != null && minutes > 0) {
+                            setState(() => _notifyMinutesBefore = minutes);
+                          }
+                        },
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
             // Note
             Text(
               'Note',
@@ -1470,12 +1606,30 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                         ? null
                         : _locationController.text.trim(),
                     recurrence: _recurrence == 'none' ? null : _recurrence,
+                    notifyEnabled: _notifyEnabled,
+                    notifyMinutesBefore: _notifyMinutesBefore,
                     createdAt: DateTime.now(),
                     updatedAt: DateTime.now(),
                   );
 
                   await Provider.of<ScheduleProvider>(context, listen: false)
                       .createSchedule(schedule);
+
+                  // Schedule notification if enabled
+                  if (_notifyEnabled && schedule.id.isNotEmpty) {
+                    final notificationTime = startDateTime.subtract(
+                      Duration(minutes: _notifyMinutesBefore),
+                    );
+                    if (notificationTime.isAfter(DateTime.now())) {
+                      await NotificationService().scheduleNotification(
+                        id: schedule.id.hashCode,
+                        title: schedule.title,
+                        body:
+                            'Scheduled at ${DateFormat('h:mm a').format(startDateTime)}',
+                        scheduledTime: notificationTime,
+                      );
+                    }
+                  }
 
                   if (context.mounted) {
                     Navigator.pop(context);
@@ -1522,9 +1676,13 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
   late TimeOfDay _endTime;
   late String _selectedCategory;
   late String _recurrence;
+  late bool _notifyEnabled;
+  late int _notifyMinutesBefore;
+  late bool _isCustomNotifyTime;
   late final TextEditingController _nameController;
   late final TextEditingController _locationController;
   late final TextEditingController _noteController;
+  final _customMinutesController = TextEditingController();
 
   @override
   void initState() {
@@ -1534,6 +1692,14 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
     _endTime = TimeOfDay.fromDateTime(widget.schedule.endTime);
     _selectedCategory = widget.schedule.category ?? 'Design';
     _recurrence = widget.schedule.recurrence ?? 'none';
+    _notifyEnabled = widget.schedule.notifyEnabled;
+    _notifyMinutesBefore = widget.schedule.notifyMinutesBefore;
+    _isCustomNotifyTime =
+        ![0, 5, 10, 15, 30, 60].contains(widget.schedule.notifyMinutesBefore);
+    if (_isCustomNotifyTime) {
+      _customMinutesController.text =
+          widget.schedule.notifyMinutesBefore.toString();
+    }
     _nameController = TextEditingController(text: widget.schedule.title);
     _locationController =
         TextEditingController(text: widget.schedule.location ?? '');
@@ -1550,6 +1716,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
     _nameController.dispose();
     _locationController.dispose();
     _noteController.dispose();
+    _customMinutesController.dispose();
     super.dispose();
   }
 
@@ -1883,6 +2050,131 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
 
             const SizedBox(height: 32),
 
+            // Notify me
+            Text(
+              'Notify me',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.brightness == Brightness.dark
+                    ? theme.cardColor
+                    : const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Enable notification',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.textTheme.bodyMedium?.color,
+                        ),
+                      ),
+                      Switch(
+                        value: _notifyEnabled,
+                        onChanged: (value) =>
+                            setState(() => _notifyEnabled = value),
+                        activeColor: const Color(0xFF6B66FF),
+                      ),
+                    ],
+                  ),
+                  if (_notifyEnabled) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Remind before',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: theme.textTheme.bodyMedium?.color,
+                          ),
+                        ),
+                        DropdownButton<int>(
+                          value:
+                              _isCustomNotifyTime ? -1 : _notifyMinutesBefore,
+                          items: const [
+                            DropdownMenuItem(
+                                value: 0, child: Text('At the time of event')),
+                            DropdownMenuItem(
+                                value: 5, child: Text('5 minutes')),
+                            DropdownMenuItem(
+                                value: 10, child: Text('10 minutes')),
+                            DropdownMenuItem(
+                                value: 15, child: Text('15 minutes')),
+                            DropdownMenuItem(
+                                value: 30, child: Text('30 minutes')),
+                            DropdownMenuItem(value: 60, child: Text('1 hour')),
+                            DropdownMenuItem(value: -1, child: Text('Custom')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              if (value == -1) {
+                                _isCustomNotifyTime = true;
+                              } else {
+                                _isCustomNotifyTime = false;
+                                _notifyMinutesBefore = value!;
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    if (_isCustomNotifyTime) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _customMinutesController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Minutes before',
+                          hintText: 'Enter minutes',
+                          filled: true,
+                          fillColor: theme.brightness == Brightness.dark
+                              ? theme.cardColor.withValues(alpha: 0.5)
+                              : Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                                color: const Color(0xFF6B66FF)
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                                color: const Color(0xFF6B66FF)
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF6B66FF), width: 2),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          final minutes = int.tryParse(value);
+                          if (minutes != null && minutes > 0) {
+                            setState(() => _notifyMinutesBefore = minutes);
+                          }
+                        },
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
             // Note
             Text(
               'Note',
@@ -1953,12 +2245,33 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                       ? null
                       : _locationController.text.trim(),
                   recurrence: _recurrence == 'none' ? null : _recurrence,
+                  notifyEnabled: _notifyEnabled,
+                  notifyMinutesBefore: _notifyMinutesBefore,
                   updatedAt: DateTime.now(),
                 );
 
                 final scheduleProvider =
                     Provider.of<ScheduleProvider>(context, listen: false);
                 await scheduleProvider.updateSchedule(updatedSchedule);
+
+                // Cancel old notification and schedule new one if enabled
+                await NotificationService().cancelNotification(
+                  widget.schedule.id.hashCode,
+                );
+                if (_notifyEnabled && updatedSchedule.id.isNotEmpty) {
+                  final notificationTime = startDateTime.subtract(
+                    Duration(minutes: _notifyMinutesBefore),
+                  );
+                  if (notificationTime.isAfter(DateTime.now())) {
+                    await NotificationService().scheduleNotification(
+                      id: updatedSchedule.id.hashCode,
+                      title: updatedSchedule.title,
+                      body:
+                          'Scheduled at ${DateFormat('h:mm a').format(startDateTime)}',
+                      scheduledTime: notificationTime,
+                    );
+                  }
+                }
 
                 if (context.mounted) {
                   Navigator.pop(context);
@@ -2016,6 +2329,8 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                         ? null
                         : _locationController.text.trim(),
                     recurrence: _recurrence == 'none' ? null : _recurrence,
+                    notifyEnabled: _notifyEnabled,
+                    notifyMinutesBefore: _notifyMinutesBefore,
                     updatedAt: DateTime.now(),
                   );
 
