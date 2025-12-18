@@ -197,8 +197,11 @@ class ScheduleRepository {
   /// Delete a schedule
   Future<void> deleteSchedule(String scheduleId) async {
     try {
+      print('Repository: Deleting schedule document with ID: $scheduleId');
       await _schedulesCollection.doc(scheduleId).delete();
+      print('Repository: Successfully deleted schedule document: $scheduleId');
     } catch (e) {
+      print('Repository: Error deleting schedule $scheduleId: $e');
       throw Exception('Failed to delete schedule: $e');
     }
   }
@@ -206,12 +209,16 @@ class ScheduleRepository {
   /// Delete this schedule and all future occurrences in the recurring series
   Future<void> deleteScheduleAndFuture(Schedule schedule) async {
     try {
+      print('Repository: deleteScheduleAndFuture called for schedule ${schedule.id} with recurrenceId: ${schedule.recurrenceId}');
+      
       if (schedule.recurrenceId == null) {
         // If not a recurring schedule, just delete this one
+        print('Repository: Non-recurring schedule, deleting single schedule');
         await deleteSchedule(schedule.id);
         return;
       }
 
+      print('Repository: Querying for recurring schedules with recurrenceId: ${schedule.recurrenceId}');
       // Get all schedules in this recurrence group that are on or after this date
       final snapshot = await _schedulesCollection
           .where('recurrenceId', isEqualTo: schedule.recurrenceId)
@@ -220,14 +227,24 @@ class ScheduleRepository {
                   Timestamp.fromDate(schedule.scheduledDate))
           .get();
 
+      print('Repository: Found ${snapshot.docs.length} schedules to delete');
+
+      if (snapshot.docs.isEmpty) {
+        print('Repository: No schedules found to delete');
+        return;
+      }
+
       // Delete all matching schedules
       final batch = FirebaseFirestore.instance.batch();
       for (final doc in snapshot.docs) {
+        print('Repository: Adding schedule ${doc.id} to batch delete');
         batch.delete(doc.reference);
       }
 
       await batch.commit();
+      print('Repository: Successfully deleted ${snapshot.docs.length} schedules');
     } catch (e) {
+      print('Repository: Error in deleteScheduleAndFuture: $e');
       throw Exception('Failed to delete schedule series: $e');
     }
   }

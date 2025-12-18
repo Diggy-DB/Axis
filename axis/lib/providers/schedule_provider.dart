@@ -128,16 +128,23 @@ class ScheduleProvider with ChangeNotifier {
   }
 
   Future<void> deleteSchedule(String scheduleId) async {
+    print('deleteSchedule called with ID: $scheduleId');
+    print('_repository is null: ${_repository == null}');
+    
     if (_repository == null) {
+      print('Repository is null - user not authenticated');
       throw Exception('User not authenticated');
     }
 
     try {
       _error = null;
+      print('Deleting schedule with ID: $scheduleId');
 
       await _repository!.deleteSchedule(scheduleId);
+      print('Schedule deleted successfully: $scheduleId');
       // The stream listener will automatically update the list
     } catch (e) {
+      print('Error deleting schedule $scheduleId: $e');
       _error = e.toString();
       notifyListeners();
       rethrow;
@@ -151,10 +158,13 @@ class ScheduleProvider with ChangeNotifier {
 
     try {
       _error = null;
+      print('Deleting schedule and future occurrences: ${schedule.id}, recurrenceId: ${schedule.recurrenceId}');
 
       await _repository!.deleteScheduleAndFuture(schedule);
+      print('Schedule series deleted successfully: ${schedule.id}');
       // The stream listener will automatically update the list
     } catch (e) {
+      print('Error deleting schedule series ${schedule.id}: $e');
       _error = e.toString();
       notifyListeners();
       rethrow;

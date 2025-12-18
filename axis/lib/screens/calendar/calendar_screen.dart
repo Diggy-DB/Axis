@@ -511,17 +511,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
           TextButton(
             onPressed: () async {
+              print('=== DELETE BUTTON PRESSED ===');
+              
+              // Get provider reference before any async operations
+              final scheduleProvider = context.read<ScheduleProvider>();
+              
               Navigator.pop(context);
 
               // Show delete confirmation dialog with appropriate options
               if (schedule.recurrenceId != null) {
+                print('=== SHOWING RECURRING DELETE DIALOG ===');
                 // Recurring schedule - show both options
                 await showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete recurring event'),
                     content: const Text(
-                        'Do you want to delete this event or this and all future events?'),
+                        'What would you like to delete?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -529,30 +535,59 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       TextButton(
                         onPressed: () async {
+                          print('Delete button pressed for schedule: ${schedule.id}');
                           Navigator.pop(context);
-                          await Provider.of<ScheduleProvider>(context,
-                                  listen: false)
-                              .deleteSchedule(schedule.id);
+                          try {
+                            print('About to call deleteSchedule for: ${schedule.id}');
+                            await scheduleProvider.deleteSchedule(schedule.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Event deleted')),
+                              );
+                            }
+                          } catch (e) {
+                            print('Exception in delete button: $e');
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error deleting event: $e')),
+                              );
+                            }
+                          }
                         },
                         style:
                             TextButton.styleFrom(foregroundColor: Colors.red),
-                        child: const Text('This event'),
+                        child: const Text('Delete only this schedule'),
                       ),
                       TextButton(
                         onPressed: () async {
+                          print('Delete series button pressed for schedule: ${schedule.id}');
                           Navigator.pop(context);
-                          await Provider.of<ScheduleProvider>(context,
-                                  listen: false)
-                              .deleteScheduleAndFuture(schedule);
+                          try {
+                            print('About to call deleteScheduleAndFuture for: ${schedule.id}');
+                            await scheduleProvider.deleteScheduleAndFuture(schedule);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Events deleted')),
+                              );
+                            }
+                          } catch (e) {
+                            print('Exception in delete series button: $e');
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error deleting events: $e')),
+                              );
+                            }
+                          }
                         },
                         style:
                             TextButton.styleFrom(foregroundColor: Colors.red),
-                        child: const Text('This and following events'),
+                        child: const Text('Delete all following schedules'),
                       ),
                     ],
                   ),
                 );
               } else {
+                print('=== SHOWING NON-RECURRING DELETE DIALOG ===');
                 // Non-recurring schedule - simple confirmation
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -562,11 +597,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         'Are you sure you want to delete this event?'),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context, false),
+                        onPressed: () {
+                          print('=== NON-RECURRING CANCEL PRESSED ===');
+                          Navigator.pop(context, false);
+                        },
                         child: const Text('Cancel'),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pop(context, true),
+                        onPressed: () {
+                          print('=== NON-RECURRING DELETE CONFIRMED ===');
+                          Navigator.pop(context, true);
+                        },
                         style:
                             TextButton.styleFrom(foregroundColor: Colors.red),
                         child: const Text('Delete'),
@@ -575,9 +616,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                 );
 
-                if (confirm == true && context.mounted) {
-                  await Provider.of<ScheduleProvider>(context, listen: false)
-                      .deleteSchedule(schedule.id);
+                print('=== DIALOG RESULT: $confirm ===');
+                if (confirm == true) {
+                  print('Non-recurring delete confirmed for schedule: ${schedule.id}');
+                  try {
+                    print('About to call deleteSchedule for non-recurring: ${schedule.id}');
+                    await scheduleProvider.deleteSchedule(schedule.id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Event deleted')),
+                      );
+                    }
+                  } catch (e) {
+                    print('Exception in non-recurring delete: $e');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error deleting event: $e')),
+                      );
+                    }
+                  }
                 }
               }
             },
@@ -1033,7 +1090,7 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
   DateTime? _selectedDate;
   TimeOfDay _startTime = const TimeOfDay(hour: 12, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 14, minute: 0);
-  String _selectedCategory = 'Design';
+  String? _selectedCategory;
   String _recurrence = 'none';
   bool _notifyEnabled = false;
   int _notifyMinutesBefore = 5;
@@ -1593,7 +1650,7 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                     id: '',
                     userId: authProvider.user!.id,
                     title: _nameController.text.trim().isEmpty
-                        ? _selectedCategory
+                        ? (_selectedCategory ?? 'Event')
                         : _nameController.text.trim(),
                     description: _noteController.text.trim().isEmpty
                         ? null
@@ -1674,7 +1731,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
   late DateTime? _selectedDate;
   late TimeOfDay _startTime;
   late TimeOfDay _endTime;
-  late String _selectedCategory;
+  late String? _selectedCategory;
   late String _recurrence;
   late bool _notifyEnabled;
   late int _notifyMinutesBefore;
@@ -1690,7 +1747,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
     _selectedDate = widget.schedule.scheduledDate;
     _startTime = TimeOfDay.fromDateTime(widget.schedule.startTime);
     _endTime = TimeOfDay.fromDateTime(widget.schedule.endTime);
-    _selectedCategory = widget.schedule.category ?? 'Design';
+    _selectedCategory = widget.schedule.category;
     _recurrence = widget.schedule.recurrence ?? 'none';
     _notifyEnabled = widget.schedule.notifyEnabled;
     _notifyMinutesBefore = widget.schedule.notifyMinutesBefore;
@@ -2232,7 +2289,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
 
                 final updatedSchedule = widget.schedule.copyWith(
                   title: _nameController.text.trim().isEmpty
-                      ? _selectedCategory
+                      ? (_selectedCategory ?? 'Event')
                       : _nameController.text.trim(),
                   description: _noteController.text.trim().isEmpty
                       ? null
@@ -2316,7 +2373,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
 
                   final updatedSchedule = widget.schedule.copyWith(
                     title: _nameController.text.trim().isEmpty
-                        ? _selectedCategory
+                        ? (_selectedCategory ?? 'Event')
                         : _nameController.text.trim(),
                     description: _noteController.text.trim().isEmpty
                         ? null
