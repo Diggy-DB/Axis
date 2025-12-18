@@ -512,10 +512,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
           TextButton(
             onPressed: () async {
               print('=== DELETE BUTTON PRESSED ===');
-              
+
               // Get provider reference before any async operations
               final scheduleProvider = context.read<ScheduleProvider>();
-              
+
               Navigator.pop(context);
 
               // Show delete confirmation dialog with appropriate options
@@ -526,8 +526,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete recurring event'),
-                    content: const Text(
-                        'What would you like to delete?'),
+                    content: const Text('What would you like to delete?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -535,10 +534,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       TextButton(
                         onPressed: () async {
-                          print('Delete button pressed for schedule: ${schedule.id}');
+                          print(
+                              'Delete button pressed for schedule: ${schedule.id}');
                           Navigator.pop(context);
                           try {
-                            print('About to call deleteSchedule for: ${schedule.id}');
+                            print(
+                                'About to call deleteSchedule for: ${schedule.id}');
                             await scheduleProvider.deleteSchedule(schedule.id);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -549,7 +550,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             print('Exception in delete button: $e');
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error deleting event: $e')),
+                                SnackBar(
+                                    content: Text('Error deleting event: $e')),
                               );
                             }
                           }
@@ -560,11 +562,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       TextButton(
                         onPressed: () async {
-                          print('Delete series button pressed for schedule: ${schedule.id}');
+                          print(
+                              'Delete series button pressed for schedule: ${schedule.id}');
                           Navigator.pop(context);
                           try {
-                            print('About to call deleteScheduleAndFuture for: ${schedule.id}');
-                            await scheduleProvider.deleteScheduleAndFuture(schedule);
+                            print(
+                                'About to call deleteScheduleAndFuture for: ${schedule.id}');
+                            await scheduleProvider
+                                .deleteScheduleAndFuture(schedule);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Events deleted')),
@@ -574,7 +579,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             print('Exception in delete series button: $e');
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error deleting events: $e')),
+                                SnackBar(
+                                    content: Text('Error deleting events: $e')),
                               );
                             }
                           }
@@ -618,9 +624,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                 print('=== DIALOG RESULT: $confirm ===');
                 if (confirm == true) {
-                  print('Non-recurring delete confirmed for schedule: ${schedule.id}');
+                  print(
+                      'Non-recurring delete confirmed for schedule: ${schedule.id}');
                   try {
-                    print('About to call deleteSchedule for non-recurring: ${schedule.id}');
+                    print(
+                        'About to call deleteSchedule for non-recurring: ${schedule.id}');
                     await scheduleProvider.deleteSchedule(schedule.id);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(

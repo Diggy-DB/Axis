@@ -209,8 +209,9 @@ class ScheduleRepository {
   /// Delete this schedule and all future occurrences in the recurring series
   Future<void> deleteScheduleAndFuture(Schedule schedule) async {
     try {
-      print('Repository: deleteScheduleAndFuture called for schedule ${schedule.id} with recurrenceId: ${schedule.recurrenceId}');
-      
+      print(
+          'Repository: deleteScheduleAndFuture called for schedule ${schedule.id} with recurrenceId: ${schedule.recurrenceId}');
+
       if (schedule.recurrenceId == null) {
         // If not a recurring schedule, just delete this one
         print('Repository: Non-recurring schedule, deleting single schedule');
@@ -218,7 +219,8 @@ class ScheduleRepository {
         return;
       }
 
-      print('Repository: Querying for recurring schedules with recurrenceId: ${schedule.recurrenceId}');
+      print(
+          'Repository: Querying for recurring schedules with recurrenceId: ${schedule.recurrenceId}');
       // Get all schedules in this recurrence group that are on or after this date
       final snapshot = await _schedulesCollection
           .where('recurrenceId', isEqualTo: schedule.recurrenceId)
@@ -242,7 +244,8 @@ class ScheduleRepository {
       }
 
       await batch.commit();
-      print('Repository: Successfully deleted ${snapshot.docs.length} schedules');
+      print(
+          'Repository: Successfully deleted ${snapshot.docs.length} schedules');
     } catch (e) {
       print('Repository: Error in deleteScheduleAndFuture: $e');
       throw Exception('Failed to delete schedule series: $e');
