@@ -4,6 +4,7 @@ class DailySummary {
   final String id;
   final DateTime date; // Date this summary is for
   final String aiMessage; // AI-generated motivational message
+  final String? morningMotivation; // Message for the next morning
   final int tasksCompleted;
   final double productiveHours;
   final String? keyInsight; // AI's key insight from reflection
@@ -13,6 +14,7 @@ class DailySummary {
     required this.id,
     required this.date,
     required this.aiMessage,
+    this.morningMotivation,
     required this.tasksCompleted,
     required this.productiveHours,
     this.keyInsight,
@@ -25,6 +27,7 @@ class DailySummary {
       id: doc.id,
       date: (data['date'] as Timestamp).toDate(),
       aiMessage: data['aiMessage'] ?? '',
+      morningMotivation: data['morningMotivation'],
       tasksCompleted: data['tasksCompleted'] ?? 0,
       productiveHours: (data['productiveHours'] ?? 0.0).toDouble(),
       keyInsight: data['keyInsight'],
@@ -36,6 +39,7 @@ class DailySummary {
     return {
       'date': Timestamp.fromDate(_normalizeDate(date)),
       'aiMessage': aiMessage,
+      'morningMotivation': morningMotivation,
       'tasksCompleted': tasksCompleted,
       'productiveHours': productiveHours,
       'keyInsight': keyInsight,

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/schedule.dart';
 
 class ScheduleRepository {
@@ -197,11 +198,11 @@ class ScheduleRepository {
   /// Delete a schedule
   Future<void> deleteSchedule(String scheduleId) async {
     try {
-      print('Repository: Deleting schedule document with ID: $scheduleId');
+      debugPrint('Repository: Deleting schedule document with ID: $scheduleId');
       await _schedulesCollection.doc(scheduleId).delete();
-      print('Repository: Successfully deleted schedule document: $scheduleId');
+      debugPrint('Repository: Successfully deleted schedule document: $scheduleId');
     } catch (e) {
-      print('Repository: Error deleting schedule $scheduleId: $e');
+      debugPrint('Repository: Error deleting schedule $scheduleId: $e');
       throw Exception('Failed to delete schedule: $e');
     }
   }
@@ -209,17 +210,17 @@ class ScheduleRepository {
   /// Delete this schedule and all future occurrences in the recurring series
   Future<void> deleteScheduleAndFuture(Schedule schedule) async {
     try {
-      print(
+      debugPrint(
           'Repository: deleteScheduleAndFuture called for schedule ${schedule.id} with recurrenceId: ${schedule.recurrenceId}');
 
       if (schedule.recurrenceId == null) {
         // If not a recurring schedule, just delete this one
-        print('Repository: Non-recurring schedule, deleting single schedule');
+        debugPrint('Repository: Non-recurring schedule, deleting single schedule');
         await deleteSchedule(schedule.id);
         return;
       }
 
-      print(
+      debugPrint(
           'Repository: Querying for recurring schedules with recurrenceId: ${schedule.recurrenceId}');
       // Get all schedules in this recurrence group that are on or after this date
       final snapshot = await _schedulesCollection
@@ -229,25 +230,25 @@ class ScheduleRepository {
                   Timestamp.fromDate(schedule.scheduledDate))
           .get();
 
-      print('Repository: Found ${snapshot.docs.length} schedules to delete');
+      debugPrint('Repository: Found ${snapshot.docs.length} schedules to delete');
 
       if (snapshot.docs.isEmpty) {
-        print('Repository: No schedules found to delete');
+        debugPrint('Repository: No schedules found to delete');
         return;
       }
 
       // Delete all matching schedules
       final batch = FirebaseFirestore.instance.batch();
       for (final doc in snapshot.docs) {
-        print('Repository: Adding schedule ${doc.id} to batch delete');
+        debugPrint('Repository: Adding schedule ${doc.id} to batch delete');
         batch.delete(doc.reference);
       }
 
       await batch.commit();
-      print(
+      debugPrint(
           'Repository: Successfully deleted ${snapshot.docs.length} schedules');
     } catch (e) {
-      print('Repository: Error in deleteScheduleAndFuture: $e');
+      debugPrint('Repository: Error in deleteScheduleAndFuture: $e');
       throw Exception('Failed to delete schedule series: $e');
     }
   }

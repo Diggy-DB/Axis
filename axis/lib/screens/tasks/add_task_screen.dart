@@ -469,7 +469,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
       final updatedCategory = models.Category(
         id: _editingCategory!.id,
         label: _labelController.text.trim(),
-        colorValue: _selectedColor.value,
+        colorValue: _selectedColor.toARGB32(),
         createdAt: _editingCategory!.createdAt,
       );
       await categoryProvider.updateCategory(updatedCategory);
@@ -477,7 +477,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
       // Create new category
       await categoryProvider.createCategory(
         _labelController.text.trim(),
-        _selectedColor.value,
+        _selectedColor.toARGB32(),
       );
     }
 
@@ -503,7 +503,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && mounted) {
       await Provider.of<CategoryProvider>(context, listen: false)
           .deleteCategory(category.id);
     }
@@ -577,7 +577,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
                         runSpacing: 12,
                         children: _availableColors.map((color) {
                           final isSelected =
-                              color.value == _selectedColor.value;
+                              color.toARGB32() == _selectedColor.toARGB32();
                           return GestureDetector(
                             onTap: () {
                               setState(() {
@@ -596,7 +596,7 @@ class _CategoryManagementSheetState extends State<_CategoryManagementSheet> {
                                 boxShadow: isSelected
                                     ? [
                                         BoxShadow(
-                                          color: color.withOpacity(0.5),
+                                          color: color.withValues(alpha: 0.5),
                                           blurRadius: 8,
                                           spreadRadius: 2,
                                         )

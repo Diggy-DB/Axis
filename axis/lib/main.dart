@@ -22,23 +22,23 @@ void main() async {
     WidgetsFlutterBinding.ensureInitialized();
 
     // Initialize Firebase
-    print('Initializing Firebase...');
+    debugPrint('Initializing Firebase...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
+    debugPrint('Firebase initialized successfully');
 
     // Initialize Hive for local caching
-    print('Initializing Hive...');
+    debugPrint('Initializing Hive...');
     await Hive.initFlutter();
-    print('Hive initialized successfully');
+    debugPrint('Hive initialized successfully');
 
     // Initialize Notification Service
-    print('Initializing Notification Service...');
+    debugPrint('Initializing Notification Service...');
     await NotificationService().initialize();
-    print('Notification Service initialized successfully');
+    debugPrint('Notification Service initialized successfully');
 
-    print('Starting app...');
+    debugPrint('Starting app...');
     runApp(
       MultiProvider(
         providers: [
@@ -58,7 +58,7 @@ void main() async {
           ),
           ChangeNotifierProxyProvider<AuthProvider, ReflectionProvider>(
             create: (_) => ReflectionProvider(),
-            update: (_, auth, previous) => previous!..updateUser(auth.user?.id),
+            update: (_, auth, previous) => previous!..updateUser(auth.user?.id, user: auth.user),
           ),
           ChangeNotifierProxyProvider<AuthProvider, DailySummaryProvider>(
             create: (_) => DailySummaryProvider(
@@ -98,8 +98,8 @@ void main() async {
       ),
     );
   } catch (e, stackTrace) {
-    print('Error during app initialization: $e');
-    print('Stack trace: $stackTrace');
+    debugPrint('Error during app initialization: $e');
+    debugPrint('Stack trace: $stackTrace');
 
     // Show a basic error app instead of crashing
     runApp(

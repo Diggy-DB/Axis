@@ -340,7 +340,7 @@ class CustomChip extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(AppBorderRadius.lg),
         child: Container(
-          padding: EdgeInsets.symmetric(
+          padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.sm,
             vertical: AppSpacing.xs,
           ),

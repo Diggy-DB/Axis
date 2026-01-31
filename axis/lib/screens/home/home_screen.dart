@@ -7,6 +7,8 @@ import '../../widgets/home/today_tasks_section.dart';
 import '../../widgets/home/mini_calendar_widget.dart';
 import '../../widgets/home/daily_insight_section.dart';
 import '../notifications/notifications_screen.dart';
+import '../profile/profile_screen.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -52,6 +54,20 @@ class _HomeScreenState extends State<HomeScreen> {
               if (value == 'logout') {
                 final authProvider = context.read<AuthProvider>();
                 await authProvider.signOut();
+              } else if (value == 'profile') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileScreen(),
+                  ),
+                );
+              } else if (value == 'settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
               }
             },
             itemBuilder: (context) => [

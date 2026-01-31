@@ -52,7 +52,7 @@ class _ReflectionScreenState extends State<ReflectionScreen> {
         String errorMessage = 'Error generating insights';
         if (e.code == 'not-found') {
           errorMessage =
-              'No reflection found for yesterday. Please add a reflection first.';
+              'No reflection found. The AI will use your current task data to generate insights.';
         } else if (e.code == 'unauthenticated') {
           errorMessage = 'Please sign in to generate insights.';
         } else if (e.message != null) {
@@ -485,7 +485,7 @@ class _CompletedTasksSectionState extends State<_CompletedTasksSection> {
       final allTasks = taskProvider.allTasks;
 
       // Filter to only tasks completed on this specific date
-      final completedTasks = allTasks.where((task) {
+      var completedTasks = allTasks.where((task) {
         if (task.status != TaskStatus.completed) return false;
         if (task.completedAt == null) return false;
         final completedDate = task.completedAt!;
@@ -493,6 +493,13 @@ class _CompletedTasksSectionState extends State<_CompletedTasksSection> {
             completedDate.month == widget.date.month &&
             completedDate.day == widget.date.day;
       }).toList();
+
+      // If no completed tasks for this date and viewing today, show pending tasks instead
+      if (completedTasks.isEmpty && _isToday(widget.date)) {
+        completedTasks = allTasks.where((task) {
+          return task.status == TaskStatus.pending || task.status == TaskStatus.inProgress;
+        }).toList();
+      }
 
       setState(() {
         _completedTasks = completedTasks;
@@ -502,6 +509,13 @@ class _CompletedTasksSectionState extends State<_CompletedTasksSection> {
       debugPrint('Error loading completed tasks: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   @override
@@ -536,6 +550,14 @@ class _CompletedTasksSectionState extends State<_CompletedTasksSection> {
       );
     }
 
+    final hasCompletedTasks = _completedTasks.any((task) => task.status == TaskStatus.completed);
+    final sectionTitle = hasCompletedTasks || !_isToday(widget.date) 
+        ? 'Completed Tasks' 
+        : 'Current Tasks';
+    final sectionIcon = hasCompletedTasks || !_isToday(widget.date)
+        ? Icons.check_circle
+        : Icons.task_alt;
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -545,10 +567,10 @@ class _CompletedTasksSectionState extends State<_CompletedTasksSection> {
           children: [
             Row(
               children: [
-                const Icon(Icons.check_circle, color: AppColors.success),
+                Icon(sectionIcon, color: AppColors.success),
                 const SizedBox(width: 8),
                 Text(
-                  'Completed Tasks',
+                  sectionTitle,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -558,7 +580,9 @@ class _CompletedTasksSectionState extends State<_CompletedTasksSection> {
             const SizedBox(height: 12),
             if (_completedTasks.isEmpty)
               Text(
-                'No tasks completed on this day',
+                _isToday(widget.date)
+                    ? 'No tasks yet. Add tasks to start tracking your day!'
+                    : 'No tasks completed on this day',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.disabledColor,
                 ),
@@ -581,13 +605,16 @@ class _CompletedTasksSectionState extends State<_CompletedTasksSection> {
                     ),
                   )),
             const SizedBox(height: 8),
-            Text(
-              '${_completedTasks.length} task${_completedTasks.length == 1 ? '' : 's'} completed',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.secondary,
-                fontWeight: FontWeight.bold,
+            if (_completedTasks.isNotEmpty)
+              Text(
+                hasCompletedTasks || !_isToday(widget.date)
+                    ? '${_completedTasks.length} task${_completedTasks.length == 1 ? '' : 's'} completed'
+                    : '${_completedTasks.length} task${_completedTasks.length == 1 ? '' : 's'} in progress',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.secondary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
           ],
         ),
       ),

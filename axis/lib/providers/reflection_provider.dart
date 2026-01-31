@@ -1,14 +1,18 @@
 import 'package:flutter/foundation.dart';
 import '../models/reflection.dart';
+import '../models/user.dart';
 import '../repositories/reflection_repository.dart';
+import '../services/notification_service.dart';
 
 class ReflectionProvider extends ChangeNotifier {
   ReflectionRepository? _repository;
+  final NotificationService _notificationService = NotificationService();
 
   List<Reflection> _reflections = [];
   Reflection? _todayReflection;
   final bool _isLoading = false;
   String? _error;
+  UserModel? _currentUser;
 
   List<Reflection> get reflections => _reflections;
   Reflection? get todayReflection => _todayReflection;
@@ -30,16 +34,59 @@ class ReflectionProvider extends ChangeNotifier {
     }
   }
 
-  void updateUser(String? userId) {
+  void updateUser(String? userId, {UserModel? user}) {
+    _currentUser = user;
     if (userId != null) {
       _repository = ReflectionRepository(userId);
       _loadReflections();
       _loadTodayReflection();
+      _scheduleReflectionReminderIfEnabled();
     } else {
       _repository = null;
       _reflections = [];
       _todayReflection = null;
       notifyListeners();
+    }
+  }
+
+  Future<void> _scheduleReflectionReminderIfEnabled() async {
+    if (_currentUser == null) return;
+    
+    try {
+      if (_currentUser!.preferences.reflectionReminderEnabled) {
+        await _notificationService.scheduleRecurringReflectionReminder(
+          hour: _currentUser!.preferences.reflectionReminderHour,
+          minute: _currentUser!.preferences.reflectionReminderMinute,
+        );
+        debugPrint('Reflection reminder scheduled for ${_currentUser!.preferences.reflectionReminderHour}:${_currentUser!.preferences.reflectionReminderMinute.toString().padLeft(2, '0')} daily');
+      } else {
+        await _notificationService.cancelReflectionReminder();
+        debugPrint('Reflection reminder disabled');
+      }
+    } catch (e) {
+      debugPrint('Error scheduling reflection reminder: $e');
+    }
+  }
+
+  /// Update reflection reminder settings
+  Future<void> updateReflectionReminderSettings({
+    required bool enabled,
+    required int hour,
+    required int minute,
+  }) async {
+    try {
+      if (enabled) {
+        await _notificationService.scheduleRecurringReflectionReminder(
+          hour: hour,
+          minute: minute,
+        );
+        debugPrint('Reflection reminder updated to $hour:${minute.toString().padLeft(2, '0')} daily');
+      } else {
+        await _notificationService.cancelReflectionReminder();
+        debugPrint('Reflection reminder disabled');
+      }
+    } catch (e) {
+      debugPrint('Error updating reflection reminder: $e');
     }
   }
 

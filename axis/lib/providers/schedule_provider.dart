@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/schedule.dart';
 import '../repositories/schedule_repository.dart';
+import '../services/notification_service.dart';
 
 class ScheduleProvider with ChangeNotifier {
   ScheduleRepository? _repository;
@@ -51,6 +52,10 @@ class ScheduleProvider with ChangeNotifier {
         _schedules = schedules;
         _isLoading = false;
         _error = null;
+
+        // Reschedule notifications for all schedules
+        _rescheduleAllNotifications();
+
         notifyListeners();
       },
       onError: (error) {
@@ -84,6 +89,11 @@ class ScheduleProvider with ChangeNotifier {
       _error = null;
       final scheduleId = await _repository!.createSchedule(schedule);
 
+      // Schedule notification if enabled
+      if (schedule.notifyEnabled) {
+        await _scheduleNotification(schedule);
+      }
+
       // The stream listener will automatically update the list
       return scheduleId;
     } catch (e) {
@@ -101,6 +111,12 @@ class ScheduleProvider with ChangeNotifier {
     try {
       _error = null;
       await _repository!.updateSchedule(schedule);
+
+      // Cancel old notification and schedule new one if enabled
+      await _cancelNotification(schedule.id);
+      if (schedule.notifyEnabled) {
+        await _scheduleNotification(schedule);
+      }
 
       // The stream listener will automatically update the list
     } catch (e) {
@@ -128,23 +144,26 @@ class ScheduleProvider with ChangeNotifier {
   }
 
   Future<void> deleteSchedule(String scheduleId) async {
-    print('deleteSchedule called with ID: $scheduleId');
-    print('_repository is null: ${_repository == null}');
+    debugPrint('deleteSchedule called with ID: $scheduleId');
+    debugPrint('_repository is null: ${_repository == null}');
 
     if (_repository == null) {
-      print('Repository is null - user not authenticated');
+      debugPrint('Repository is null - user not authenticated');
       throw Exception('User not authenticated');
     }
 
     try {
       _error = null;
-      print('Deleting schedule with ID: $scheduleId');
+      debugPrint('Deleting schedule with ID: $scheduleId');
+
+      // Cancel notification before deleting
+      await _cancelNotification(scheduleId);
 
       await _repository!.deleteSchedule(scheduleId);
-      print('Schedule deleted successfully: $scheduleId');
+      debugPrint('Schedule deleted successfully: $scheduleId');
       // The stream listener will automatically update the list
     } catch (e) {
-      print('Error deleting schedule $scheduleId: $e');
+      debugPrint('Error deleting schedule $scheduleId: $e');
       _error = e.toString();
       notifyListeners();
       rethrow;
@@ -158,14 +177,14 @@ class ScheduleProvider with ChangeNotifier {
 
     try {
       _error = null;
-      print(
+      debugPrint(
           'Deleting schedule and future occurrences: ${schedule.id}, recurrenceId: ${schedule.recurrenceId}');
 
       await _repository!.deleteScheduleAndFuture(schedule);
-      print('Schedule series deleted successfully: ${schedule.id}');
+      debugPrint('Schedule series deleted successfully: ${schedule.id}');
       // The stream listener will automatically update the list
     } catch (e) {
-      print('Error deleting schedule series ${schedule.id}: $e');
+      debugPrint('Error deleting schedule series ${schedule.id}: $e');
       _error = e.toString();
       notifyListeners();
       rethrow;
@@ -205,5 +224,42 @@ class ScheduleProvider with ChangeNotifier {
     _schedulesSubscription?.cancel();
     _todaySchedulesSubscription?.cancel();
     super.dispose();
+  }
+
+  /// Schedule notification for a schedule
+  Future<void> _scheduleNotification(Schedule schedule) async {
+    if (!schedule.notifyEnabled) return;
+
+    final notificationTime = schedule.startTime.subtract(
+      Duration(minutes: schedule.notifyMinutesBefore),
+    );
+
+    // Only schedule if the notification time is in the future
+    if (notificationTime.isAfter(DateTime.now())) {
+      final notificationId = schedule.id.hashCode;
+
+      await NotificationService().scheduleNotification(
+        id: notificationId,
+        title: 'Upcoming: ${schedule.title}',
+        body: schedule.description ?? 'Starting soon',
+        scheduledTime: notificationTime,
+      );
+    }
+  }
+
+  /// Cancel notification for a schedule
+  Future<void> _cancelNotification(String scheduleId) async {
+    final notificationId = scheduleId.hashCode;
+    await NotificationService().cancelNotification(notificationId);
+  }
+
+  /// Reschedule notifications for all active schedules
+  Future<void> _rescheduleAllNotifications() async {
+    for (final schedule in _schedules) {
+      if (schedule.notifyEnabled &&
+          schedule.startTime.isAfter(DateTime.now())) {
+        await _scheduleNotification(schedule);
+      }
+    }
   }
 }

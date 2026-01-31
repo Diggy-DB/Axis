@@ -181,7 +181,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               DateFormat('EEE').format(date),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: isSelected
-                                    ? Colors.white70
+                                    ? Colors.white.withOpacity(0.9)
                                     : theme.textTheme.bodySmall?.color,
                               ),
                             ),
@@ -511,7 +511,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
           TextButton(
             onPressed: () async {
-              print('=== DELETE BUTTON PRESSED ===');
+              debugPrint('=== DELETE BUTTON PRESSED ===');
 
               // Get provider reference before any async operations
               final scheduleProvider = context.read<ScheduleProvider>();
@@ -520,7 +520,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
               // Show delete confirmation dialog with appropriate options
               if (schedule.recurrenceId != null) {
-                print('=== SHOWING RECURRING DELETE DIALOG ===');
+                debugPrint('=== SHOWING RECURRING DELETE DIALOG ===');
                 // Recurring schedule - show both options
                 await showDialog(
                   context: context,
@@ -534,11 +534,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       TextButton(
                         onPressed: () async {
-                          print(
+                          debugPrint(
                               'Delete button pressed for schedule: ${schedule.id}');
                           Navigator.pop(context);
                           try {
-                            print(
+                            debugPrint(
                                 'About to call deleteSchedule for: ${schedule.id}');
                             await scheduleProvider.deleteSchedule(schedule.id);
                             if (context.mounted) {
@@ -547,7 +547,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               );
                             }
                           } catch (e) {
-                            print('Exception in delete button: $e');
+                            debugPrint('Exception in delete button: $e');
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -562,11 +562,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       TextButton(
                         onPressed: () async {
-                          print(
+                          debugPrint(
                               'Delete series button pressed for schedule: ${schedule.id}');
                           Navigator.pop(context);
                           try {
-                            print(
+                            debugPrint(
                                 'About to call deleteScheduleAndFuture for: ${schedule.id}');
                             await scheduleProvider
                                 .deleteScheduleAndFuture(schedule);
@@ -576,7 +576,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               );
                             }
                           } catch (e) {
-                            print('Exception in delete series button: $e');
+                            debugPrint('Exception in delete series button: $e');
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -593,7 +593,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                 );
               } else {
-                print('=== SHOWING NON-RECURRING DELETE DIALOG ===');
+                debugPrint('=== SHOWING NON-RECURRING DELETE DIALOG ===');
                 // Non-recurring schedule - simple confirmation
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -604,14 +604,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     actions: [
                       TextButton(
                         onPressed: () {
-                          print('=== NON-RECURRING CANCEL PRESSED ===');
+                          debugPrint('=== NON-RECURRING CANCEL PRESSED ===');
                           Navigator.pop(context, false);
                         },
                         child: const Text('Cancel'),
                       ),
                       TextButton(
                         onPressed: () {
-                          print('=== NON-RECURRING DELETE CONFIRMED ===');
+                          debugPrint('=== NON-RECURRING DELETE CONFIRMED ===');
                           Navigator.pop(context, true);
                         },
                         style:
@@ -622,12 +622,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   ),
                 );
 
-                print('=== DIALOG RESULT: $confirm ===');
+                debugPrint('=== DIALOG RESULT: $confirm ===');
                 if (confirm == true) {
-                  print(
+                  debugPrint(
                       'Non-recurring delete confirmed for schedule: ${schedule.id}');
                   try {
-                    print(
+                    debugPrint(
                         'About to call deleteSchedule for non-recurring: ${schedule.id}');
                     await scheduleProvider.deleteSchedule(schedule.id);
                     if (context.mounted) {
@@ -636,7 +636,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       );
                     }
                   } catch (e) {
-                    print('Exception in non-recurring delete: $e');
+                    debugPrint('Exception in non-recurring delete: $e');
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Error deleting event: $e')),
@@ -786,6 +786,8 @@ class _HourlyCalendarViewState extends State<_HourlyCalendarView> {
   final ScrollController _scrollController = ScrollController();
   static const double hourHeight = 80.0;
   static const double timeColumnWidth = 60.0;
+  int? _dragTargetMinutes; // Total minutes from midnight (0-1439)
+  Object? _draggingItem;
 
   @override
   void initState() {
@@ -876,6 +878,9 @@ class _HourlyCalendarViewState extends State<_HourlyCalendarView> {
                       }),
                     ),
 
+                    // Drag targets for each hour
+                    ..._buildDragTargets(),
+
                     // Events positioned by time
                     ..._buildScheduleWidgets(theme),
                     ..._buildHabitWidgets(theme),
@@ -913,45 +918,127 @@ class _HourlyCalendarViewState extends State<_HourlyCalendarView> {
         top: top,
         left: 8,
         right: 8,
-        child: GestureDetector(
-          onTap: () => widget.onScheduleTap(schedule),
-          child: Container(
-            height: height,
-            margin: const EdgeInsets.only(bottom: 2),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: _getScheduleCategoryColor(schedule).withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: _getScheduleCategoryColor(schedule),
-                width: 2,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  schedule.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  maxLines: height > 40 ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
+        child: LongPressDraggable<Schedule>(
+          data: schedule,
+          onDragStarted: () {
+            setState(() {
+              _draggingItem = schedule;
+            });
+          },
+          onDragEnd: (_) {
+            setState(() {
+              _draggingItem = null;
+              _dragTargetMinutes = null;
+            });
+          },
+          feedback: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: 280,
+              height: height,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color:
+                    _getScheduleCategoryColor(schedule).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _getScheduleCategoryColor(schedule),
+                  width: 2,
                 ),
-                if (height > 50) ...[
-                  const SizedBox(height: 4),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   Text(
-                    '${DateFormat('h:mm a').format(schedule.startTime)} - ${DateFormat('h:mm a').format(schedule.endTime)}',
+                    schedule.title,
                     style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
+                    maxLines: height > 40 ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
-              ],
+              ),
+            ),
+          ),
+          childWhenDragging: Opacity(
+            opacity: 0.3,
+            child: Container(
+              height: height,
+              margin: const EdgeInsets.only(bottom: 2),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color:
+                    _getScheduleCategoryColor(schedule).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _getScheduleCategoryColor(schedule),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    schedule.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: height > 40 ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          child: GestureDetector(
+            onTap: () => widget.onScheduleTap(schedule),
+            child: Container(
+              height: height,
+              margin: const EdgeInsets.only(bottom: 2),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color:
+                    _getScheduleCategoryColor(schedule).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: _getScheduleCategoryColor(schedule),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    schedule.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: height > 40 ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (height > 50) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '${DateFormat('h:mm a').format(schedule.startTime)} - ${DateFormat('h:mm a').format(schedule.endTime)}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -984,55 +1071,144 @@ class _HourlyCalendarViewState extends State<_HourlyCalendarView> {
         top: top,
         left: 8,
         right: 8,
-        child: GestureDetector(
-          onTap: () => widget.onHabitTap(habit),
-          child: Container(
-            height: height,
-            margin: const EdgeInsets.only(bottom: 2),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Color(habit.domain.colorValue).withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Color(habit.domain.colorValue),
-                width: 2,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      habit.icon,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        habit.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+        child: LongPressDraggable<Habit>(
+          data: habit,
+          onDragStarted: () {
+            setState(() {
+              _draggingItem = habit;
+            });
+          },
+          onDragEnd: (_) {
+            setState(() {
+              _draggingItem = null;
+              _dragTargetMinutes = null;
+            });
+          },
+          feedback: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: 280,
+              height: height,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Color(habit.domain.colorValue).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Color(habit.domain.colorValue),
+                  width: 2,
                 ),
-                if (height > 40) ...[
-                  const SizedBox(height: 2),
+              ),
+              child: Row(
+                children: [
                   Text(
-                    '${DateFormat('h:mm a').format(startTime)} - ${DateFormat('h:mm a').format(endTime)}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
+                    habit.icon,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      habit.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
-              ],
+              ),
+            ),
+          ),
+          childWhenDragging: Opacity(
+            opacity: 0.3,
+            child: Container(
+              height: height,
+              margin: const EdgeInsets.only(bottom: 2),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Color(habit.domain.colorValue).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Color(habit.domain.colorValue),
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    habit.icon,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      habit.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          child: GestureDetector(
+            onTap: () => widget.onHabitTap(habit),
+            child: Container(
+              height: height,
+              margin: const EdgeInsets.only(bottom: 2),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Color(habit.domain.colorValue).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Color(habit.domain.colorValue),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        habit.icon,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          habit.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (height > 40) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '${DateFormat('h:mm a').format(startTime)} - ${DateFormat('h:mm a').format(endTime)}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1082,6 +1258,171 @@ class _HourlyCalendarViewState extends State<_HourlyCalendarView> {
       }
     }
     return const Color(0xFF9E9E9E);
+  }
+
+  List<Widget> _buildDragTargets() {
+    // Create drag targets for every 15 minutes (96 targets for 24 hours)
+    return List.generate(96, (index) {
+      final totalMinutes = index * 15; // 0, 15, 30, 45, 60, 75, etc.
+      final top = (totalMinutes / 60) * hourHeight;
+      const height = (15 / 60) * hourHeight; // Height of 15-minute slot
+      final isHighlighted =
+          _dragTargetMinutes == totalMinutes && _draggingItem != null;
+
+      return Positioned(
+        top: top,
+        left: 0,
+        right: 0,
+        child: DragTarget<Object>(
+          onWillAcceptWithDetails: (details) {
+            setState(() {
+              _dragTargetMinutes = totalMinutes;
+            });
+            return details.data is Schedule || details.data is Habit;
+          },
+          onLeave: (_) {
+            setState(() {
+              _dragTargetMinutes = null;
+            });
+          },
+          onAcceptWithDetails: (details) async {
+            setState(() {
+              _dragTargetMinutes = null;
+            });
+
+            if (details.data is Schedule) {
+              await _updateScheduleTime(details.data as Schedule, totalMinutes);
+            } else if (details.data is Habit) {
+              await _updateHabitTime(details.data as Habit, totalMinutes);
+            }
+          },
+          builder: (context, candidateData, rejectedData) {
+            return Container(
+              height: height,
+              decoration: isHighlighted
+                  ? BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.2),
+                      border: Border.all(
+                        color: Colors.blue,
+                        width: 2,
+                      ),
+                    )
+                  : null,
+            );
+          },
+        ),
+      );
+    });
+  }
+
+  Future<void> _updateScheduleTime(Schedule schedule, int totalMinutes) async {
+    try {
+      final scheduleProvider = context.read<ScheduleProvider>();
+
+      // Calculate the duration
+      final duration = schedule.endTime.difference(schedule.startTime);
+
+      // Convert total minutes to hours and minutes
+      final newHour = totalMinutes ~/ 60;
+      final newMinute = totalMinutes % 60;
+
+      // Create new start time with the new hour and minute but same date
+      final newStartTime = DateTime(
+        widget.selectedDay.year,
+        widget.selectedDay.month,
+        widget.selectedDay.day,
+        newHour,
+        newMinute,
+      );
+
+      // Create new end time maintaining the duration
+      final newEndTime = newStartTime.add(duration);
+
+      // Update the schedule
+      final updatedSchedule = schedule.copyWith(
+        startTime: newStartTime,
+        endTime: newEndTime,
+        updatedAt: DateTime.now(),
+      );
+
+      await scheduleProvider.updateSchedule(updatedSchedule);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Moved "${schedule.title}" to ${DateFormat('h:mm a').format(newStartTime)}',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update schedule: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateHabitTime(Habit habit, int totalMinutes) async {
+    try {
+      final habitProvider = context.read<HabitProvider>();
+
+      // Calculate the duration
+      final startTime = habit.startTime ?? DateTime.now();
+      final endTime = habit.endTime ?? startTime.add(const Duration(hours: 1));
+      final duration = endTime.difference(startTime);
+
+      // Convert total minutes to hours and minutes
+      final newHour = totalMinutes ~/ 60;
+      final newMinute = totalMinutes % 60;
+
+      // Create new start time with the new hour and minute
+      final newStartTime = DateTime(
+        widget.selectedDay.year,
+        widget.selectedDay.month,
+        widget.selectedDay.day,
+        newHour,
+        newMinute,
+      );
+
+      // Create new end time maintaining the duration
+      final newEndTime = newStartTime.add(duration);
+
+      // Update the habit
+      final updatedHabit = habit.copyWith(
+        startTime: newStartTime,
+        endTime: newEndTime,
+        updatedAt: DateTime.now(),
+      );
+
+      await habitProvider.updateHabit(updatedHabit);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Moved "${habit.name}" to ${DateFormat('h:mm a').format(newStartTime)}',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update habit: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 
@@ -1438,7 +1779,7 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _recurrence,
+              initialValue: _recurrence,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: theme.brightness == Brightness.dark
@@ -1501,7 +1842,7 @@ class _AddTaskScreenState extends State<_AddTaskScreen> {
                         value: _notifyEnabled,
                         onChanged: (value) =>
                             setState(() => _notifyEnabled = value),
-                        activeColor: const Color(0xFF6B66FF),
+                        activeThumbColor: const Color(0xFF6B66FF),
                       ),
                     ],
                   ),
@@ -2087,7 +2428,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _recurrence,
+              initialValue: _recurrence,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: theme.brightness == Brightness.dark
@@ -2149,7 +2490,7 @@ class _EditScheduleScreenState extends State<_EditScheduleScreen> {
                         value: _notifyEnabled,
                         onChanged: (value) =>
                             setState(() => _notifyEnabled = value),
-                        activeColor: const Color(0xFF6B66FF),
+                        activeThumbColor: const Color(0xFF6B66FF),
                       ),
                     ],
                   ),
@@ -2469,20 +2810,24 @@ class _TimeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 60,
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
+          color: theme.brightness == Brightness.dark
+              ? theme.cardColor
+              : const Color(0xFFF5F5F5),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: Text(
             time.format(context),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w600,
+              color: theme.textTheme.bodyLarge?.color,
             ),
           ),
         ),
@@ -2506,12 +2851,17 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color : Colors.white,
+          color: isSelected
+              ? color
+              : (theme.brightness == Brightness.dark
+                  ? theme.cardColor
+                  : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: color,
@@ -2525,7 +2875,7 @@ class _CategoryChip extends StatelessWidget {
               width: 8,
               height: 8,
               decoration: BoxDecoration(
-                color: isSelected ? Colors.white : color,
+                color: isSelected ? theme.colorScheme.onPrimary : color,
                 shape: BoxShape.circle,
               ),
             ),
@@ -2533,7 +2883,11 @@ class _CategoryChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black,
+                color: isSelected
+                    ? theme.colorScheme.onPrimary
+                    : (theme.brightness == Brightness.dark
+                        ? theme.textTheme.bodyLarge?.color
+                        : Colors.black),
                 fontWeight: FontWeight.w500,
               ),
             ),

@@ -518,8 +518,8 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
   final Set<int> _selectedDays = {};
-  bool _notifyEnabled = false;
-  int _notifyMinutesBefore = 5;
+  final bool _notifyEnabled = false;
+  final int _notifyMinutesBefore = 5;
   bool _isLoading = false;
 
   @override
@@ -656,6 +656,7 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = Color(widget.domain.colorValue);
     final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -722,7 +723,9 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
                 decoration: InputDecoration(
                   labelText: 'Habit Name',
                   filled: true,
-                  fillColor: const Color(0xFFF5F5F5),
+                  fillColor: theme.brightness == Brightness.dark
+                      ? theme.cardColor
+                      : const Color(0xFFF5F5F5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -744,7 +747,9 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
                 decoration: InputDecoration(
                   labelText: 'Description (optional)',
                   filled: true,
-                  fillColor: const Color(0xFFF5F5F5),
+                  fillColor: theme.brightness == Brightness.dark
+                      ? theme.cardColor
+                      : const Color(0xFFF5F5F5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -770,7 +775,9 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
+                          color: theme.brightness == Brightness.dark
+                              ? theme.cardColor
+                              : const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -780,15 +787,16 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
                               'Start Time',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: theme.textTheme.bodySmall?.color,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               _startTime.format(context),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: theme.textTheme.bodyLarge?.color,
                               ),
                             ),
                           ],
@@ -803,7 +811,9 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
+                          color: theme.brightness == Brightness.dark
+                              ? theme.cardColor
+                              : const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -813,15 +823,16 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
                               'End Time',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: theme.textTheme.bodySmall?.color,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               _endTime.format(context),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: theme.textTheme.bodyLarge?.color,
                               ),
                             ),
                           ],
@@ -854,7 +865,11 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: isSelected ? color : const Color(0xFFF5F5F5),
+                        color: isSelected
+                            ? color
+                            : (theme.brightness == Brightness.dark
+                                ? theme.cardColor
+                                : const Color(0xFFF5F5F5)),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color: isSelected ? color : Colors.transparent,
@@ -867,7 +882,9 @@ class _AddHabitDialogState extends State<_AddHabitDialog> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.white : Colors.grey[800],
+                            color: isSelected
+                                ? theme.colorScheme.onPrimary
+                                : theme.textTheme.bodyLarge?.color,
                           ),
                         ),
                       ),
@@ -1097,6 +1114,7 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = Color(widget.habit.domain.colorValue);
     final dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -1163,7 +1181,9 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
                 decoration: InputDecoration(
                   labelText: 'Habit Name',
                   filled: true,
-                  fillColor: const Color(0xFFF5F5F5),
+                  fillColor: theme.brightness == Brightness.dark
+                      ? theme.cardColor
+                      : const Color(0xFFF5F5F5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -1185,7 +1205,9 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
                 decoration: InputDecoration(
                   labelText: 'Description (optional)',
                   filled: true,
-                  fillColor: const Color(0xFFF5F5F5),
+                  fillColor: theme.brightness == Brightness.dark
+                      ? theme.cardColor
+                      : const Color(0xFFF5F5F5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -1211,7 +1233,9 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
+                          color: theme.brightness == Brightness.dark
+                              ? theme.cardColor
+                              : const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -1221,15 +1245,16 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
                               'Start Time',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: theme.textTheme.bodySmall?.color,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               _startTime.format(context),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: theme.textTheme.bodyLarge?.color,
                               ),
                             ),
                           ],
@@ -1244,7 +1269,9 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F5),
+                          color: theme.brightness == Brightness.dark
+                              ? theme.cardColor
+                              : const Color(0xFFF5F5F5),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -1254,15 +1281,16 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
                               'End Time',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: theme.textTheme.bodySmall?.color,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               _endTime.format(context),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
+                                color: theme.textTheme.bodyLarge?.color,
                               ),
                             ),
                           ],
@@ -1295,7 +1323,11 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: isSelected ? color : const Color(0xFFF5F5F5),
+                        color: isSelected
+                            ? color
+                            : (theme.brightness == Brightness.dark
+                                ? theme.cardColor
+                                : const Color(0xFFF5F5F5)),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color: isSelected ? color : Colors.transparent,
@@ -1308,7 +1340,9 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.white : Colors.grey[800],
+                            color: isSelected
+                                ? theme.colorScheme.onPrimary
+                                : theme.textTheme.bodyLarge?.color,
                           ),
                         ),
                       ),
@@ -1330,7 +1364,9 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: theme.brightness == Brightness.dark
+                      ? theme.cardColor
+                      : const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -1346,7 +1382,7 @@ class _EditHabitDialogState extends State<_EditHabitDialog> {
                           value: _notifyEnabled,
                           onChanged: (value) =>
                               setState(() => _notifyEnabled = value),
-                          activeColor: color,
+                          activeThumbColor: color,
                         ),
                       ],
                     ),

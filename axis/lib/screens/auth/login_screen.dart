@@ -29,6 +29,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    debugPrint('Login form submitted');
+    debugPrint('Email: ${_emailController.text.trim()}');
+    debugPrint('Is Sign Up: $_isSignUp');
+
     final authProvider = context.read<AuthProvider>();
     bool success;
 
@@ -45,7 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
 
+    debugPrint('Authentication result: $success');
+
     if (mounted && !success && authProvider.error != null) {
+      debugPrint('Authentication error: ${authProvider.error}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.error!),

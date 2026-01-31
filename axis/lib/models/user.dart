@@ -8,6 +8,7 @@ class UserModel {
   final DateTime createdAt;
   final String timezone;
   final UserPreferences preferences;
+  final bool emailVerified;
   // New onboarding fields
   final String? firstName;
   final String? lastName;
@@ -15,6 +16,9 @@ class UserModel {
   final String? coreValues; // Answer 1: Core values
   final String? worldview; // Answer 2: Worldview, belief system and purpose
   final String? ambition; // Answer 3: Future ambition and role
+
+  // Convenience getter for name
+  String get name => displayName.isNotEmpty ? displayName : (firstName != null && lastName != null ? '$firstName $lastName' : 'User');
 
   UserModel({
     required this.id,
@@ -24,6 +28,7 @@ class UserModel {
     required this.createdAt,
     required this.timezone,
     required this.preferences,
+    this.emailVerified = false,
     this.firstName,
     this.lastName,
     this.dateOfBirth,
@@ -42,6 +47,7 @@ class UserModel {
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       timezone: data['timezone'] ?? 'UTC',
       preferences: UserPreferences.fromMap(data['preferences'] ?? {}),
+      emailVerified: data['emailVerified'] ?? false,
       firstName: data['firstName'],
       lastName: data['lastName'],
       dateOfBirth: data['dateOfBirth'] != null
@@ -61,6 +67,7 @@ class UserModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'timezone': timezone,
       'preferences': preferences.toMap(),
+      'emailVerified': emailVerified,
       'firstName': firstName,
       'lastName': lastName,
       'dateOfBirth':
@@ -78,6 +85,7 @@ class UserModel {
     DateTime? createdAt,
     String? timezone,
     UserPreferences? preferences,
+    bool? emailVerified,
     String? firstName,
     String? lastName,
     DateTime? dateOfBirth,
@@ -93,6 +101,7 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       timezone: timezone ?? this.timezone,
       preferences: preferences ?? this.preferences,
+      emailVerified: emailVerified ?? this.emailVerified,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
@@ -107,11 +116,17 @@ class UserPreferences {
   final String theme; // 'light', 'dark', 'system'
   final int firstDayOfWeek; // 0 = Sunday, 1 = Monday
   final bool notificationsEnabled;
+  final bool reflectionReminderEnabled;
+  final int reflectionReminderHour; // 0-23
+  final int reflectionReminderMinute; // 0-59
 
   UserPreferences({
     this.theme = 'system',
     this.firstDayOfWeek = 1,
     this.notificationsEnabled = true,
+    this.reflectionReminderEnabled = true,
+    this.reflectionReminderHour = 20, // 8:00 PM by default
+    this.reflectionReminderMinute = 0,
   });
 
   factory UserPreferences.fromMap(Map<String, dynamic> map) {
@@ -119,6 +134,9 @@ class UserPreferences {
       theme: map['theme'] ?? 'system',
       firstDayOfWeek: map['firstDayOfWeek'] ?? 1,
       notificationsEnabled: map['notificationsEnabled'] ?? true,
+      reflectionReminderEnabled: map['reflectionReminderEnabled'] ?? true,
+      reflectionReminderHour: map['reflectionReminderHour'] ?? 20,
+      reflectionReminderMinute: map['reflectionReminderMinute'] ?? 0,
     );
   }
 
@@ -127,6 +145,9 @@ class UserPreferences {
       'theme': theme,
       'firstDayOfWeek': firstDayOfWeek,
       'notificationsEnabled': notificationsEnabled,
+      'reflectionReminderEnabled': reflectionReminderEnabled,
+      'reflectionReminderHour': reflectionReminderHour,
+      'reflectionReminderMinute': reflectionReminderMinute,
     };
   }
 
@@ -134,11 +155,17 @@ class UserPreferences {
     String? theme,
     int? firstDayOfWeek,
     bool? notificationsEnabled,
+    bool? reflectionReminderEnabled,
+    int? reflectionReminderHour,
+    int? reflectionReminderMinute,
   }) {
     return UserPreferences(
       theme: theme ?? this.theme,
       firstDayOfWeek: firstDayOfWeek ?? this.firstDayOfWeek,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      reflectionReminderEnabled: reflectionReminderEnabled ?? this.reflectionReminderEnabled,
+      reflectionReminderHour: reflectionReminderHour ?? this.reflectionReminderHour,
+      reflectionReminderMinute: reflectionReminderMinute ?? this.reflectionReminderMinute,
     );
   }
 }

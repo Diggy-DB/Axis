@@ -156,7 +156,7 @@ class _HabitStatisticsScreenState extends State<HabitStatisticsScreen>
           const SizedBox(height: AppSpacing.lg),
 
           // Domain Distribution
-          _SectionHeader(
+          const _SectionHeader(
             title: 'Habits by Domain',
             subtitle: 'Distribution across life areas',
           ),
@@ -165,7 +165,7 @@ class _HabitStatisticsScreenState extends State<HabitStatisticsScreen>
           const SizedBox(height: AppSpacing.lg),
 
           // Top Performing Habits
-          _SectionHeader(
+          const _SectionHeader(
             title: 'Top Performers',
             subtitle: 'Habits with highest completion rates',
           ),
@@ -291,7 +291,7 @@ class _HabitStatisticsScreenState extends State<HabitStatisticsScreen>
           const SizedBox(height: AppSpacing.lg),
 
           // Habits List with Stats
-          _SectionHeader(
+          const _SectionHeader(
             title: 'Habit Performance',
             subtitle: 'Individual habit statistics',
           ),
@@ -464,7 +464,7 @@ class _HabitStatisticsScreenState extends State<HabitStatisticsScreen>
                             ),
                             Text(
                               '$count habits',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppColors.textSecondaryLight,
                                 fontSize: 12,
                               ),
@@ -550,7 +550,7 @@ class _HabitStatisticsScreenState extends State<HabitStatisticsScreen>
               children: [
                 Text(
                   habit.icon,
-                  style: TextStyle(fontSize: 32),
+                  style: const TextStyle(fontSize: 32),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -566,7 +566,7 @@ class _HabitStatisticsScreenState extends State<HabitStatisticsScreen>
                       ),
                       Text(
                         habit.description,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: AppColors.textSecondaryLight,
                           fontSize: 12,
                         ),

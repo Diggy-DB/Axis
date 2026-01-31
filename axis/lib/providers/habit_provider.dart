@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/habit.dart';
 import '../models/habit_log.dart';
 import '../repositories/habit_repository.dart';
+import '../services/notification_service.dart';
 import '../core/constants/enums.dart';
 
 class HabitProvider extends ChangeNotifier {
@@ -41,6 +42,8 @@ class HabitProvider extends ChangeNotifier {
 
     _repository!.streamHabits().listen((habits) {
       _habits = habits;
+      // Reschedule notifications for all habits
+      _rescheduleAllNotifications();
       notifyListeners();
     });
   }
@@ -92,6 +95,11 @@ class HabitProvider extends ChangeNotifier {
 
       await _repository!.createHabit(habit);
 
+      // Schedule notification if habit has a reminder time
+      if (habit.reminderTime != null) {
+        await _scheduleHabitNotification(habit);
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -113,6 +121,14 @@ class HabitProvider extends ChangeNotifier {
 
       await _repository!.updateHabit(habit);
 
+      // Cancel old notification
+      await _cancelHabitNotification(habit.id);
+
+      // Schedule new notification if habit has a reminder time
+      if (habit.reminderTime != null) {
+        await _scheduleHabitNotification(habit);
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -121,6 +137,51 @@ class HabitProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Schedule notification for a habit
+  Future<void> _scheduleHabitNotification(Habit habit) async {
+    if (habit.reminderTime == null) return;
+
+    final now = DateTime.now();
+    var scheduledTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      habit.reminderTime!.hour,
+      habit.reminderTime!.minute,
+    );
+
+    // If the time has already passed today, schedule for tomorrow
+    if (scheduledTime.isBefore(now)) {
+      scheduledTime = scheduledTime.add(const Duration(days: 1));
+    }
+
+    final notificationId = habit.id.hashCode;
+
+    await NotificationService().scheduleNotification(
+      id: notificationId,
+      title: 'Habit Reminder: ${habit.name}',
+      body: habit.description.isNotEmpty
+          ? habit.description
+          : 'Time to complete your habit!',
+      scheduledTime: scheduledTime,
+    );
+  }
+
+  /// Cancel notification for a habit
+  Future<void> _cancelHabitNotification(String habitId) async {
+    final notificationId = habitId.hashCode;
+    await NotificationService().cancelNotification(notificationId);
+  }
+
+  /// Reschedule notifications for all active habits
+  Future<void> _rescheduleAllNotifications() async {
+    for (final habit in _habits) {
+      if (habit.reminderTime != null) {
+        await _scheduleHabitNotification(habit);
+      }
     }
   }
 
@@ -158,6 +219,8 @@ class HabitProvider extends ChangeNotifier {
 
     try {
       await _repository!.archiveHabit(habitId);
+      // Cancel notification when archiving
+      await _cancelHabitNotification(habitId);
       return true;
     } catch (e) {
       _error = 'Failed to archive habit: $e';
@@ -172,6 +235,8 @@ class HabitProvider extends ChangeNotifier {
 
     try {
       await _repository!.deleteHabit(habitId);
+      // Cancel notification when deleting
+      await _cancelHabitNotification(habitId);
       return true;
     } catch (e) {
       _error = 'Failed to delete habit: $e';
