@@ -24,10 +24,11 @@ Manual HTTP callable function for testing:
    npm install
    ```
 
-2. **Set OpenAI API Key:**
+2. **Store the OpenAI API key as a secret** (the functions read it from `OPENAI_API_KEY`):
    ```bash
-   firebase functions:config:set openai.key="your-api-key-here"
+   firebase functions:secrets:set OPENAI_API_KEY
    ```
+   The CLI prompts for the key, so it never appears in your shell history or in this repo.
 
 3. **Deploy functions:**
    ```bash
@@ -41,22 +42,17 @@ Run functions locally with emulator:
 firebase emulators:start --only functions
 ```
 
-## Cost Estimation
-
-- GPT-4o-mini: ~$0.15 per 1M input tokens, ~$0.60 per 1M output tokens
-- Per user per day: ~$0.0003
-- 1000 active users/day: ~$9/month
-
 ## Environment Variables
 
-The function reads the OpenAI API key from Firebase config:
+Both functions declare `OPENAI_API_KEY` as a Secret Manager secret (`runWith({ secrets: ['OPENAI_API_KEY'] })`):
 ```bash
-# View current config
-firebase functions:config:get
+# Set or rotate the key (prompts for the value)
+firebase functions:secrets:set OPENAI_API_KEY
 
-# Set config
-firebase functions:config:set openai.key="sk-..."
+# List its versions without printing the value
+firebase functions:secrets:get OPENAI_API_KEY
 ```
+For the local emulator, put `OPENAI_API_KEY=...` in `functions/.secret.local`, which is git-ignored.
 
 ## Monitoring
 

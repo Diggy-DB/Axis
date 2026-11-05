@@ -1,370 +1,82 @@
-# Axis - Your Life Operating System
+# Axis
 
-<div align="center">
+A Flutter app for iPhone and Mac that helps you plan the day, build habits across five areas of life, and reflect each evening. A Cloud Function reads your reflections and writes back a short summary and a prompt for tomorrow.
 
-![Axis Logo](assets/images/logo.png)
+<p align="center">
+  <img src="axis/assets/app_icon.svg" alt="The Axis app icon" width="120">
+</p>
 
-**A production-ready, multi-platform life management application**
+<!-- Screenshots: add home.png, habits.png and reflection.png to docs/ and uncomment this table.
+| Home | Habits | Reflection |
+|---|---|---|
+| ![Home screen](docs/home.png) | ![Habits screen](docs/habits.png) | ![Reflection screen](docs/reflection.png) |
+-->
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.16+-blue.svg)](https://flutter.dev)
-[![Firebase](https://img.shields.io/badge/Firebase-Firestore-orange.svg)](https://firebase.google.com)
-[![Python](https://img.shields.io/badge/Python-3.11+-green.svg)](https://python.org)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-[Features](#features) • [Architecture](#architecture) • [Setup](#setup) • [Documentation](#documentation) • [Contributing](#contributing)
-
-</div>
-
----
-
-## Overview
-
-**Axis** is a comprehensive life operating system that helps you manage your daily activities, build lasting habits, and maintain balance across all areas of life. Built with Flutter for seamless multi-platform support (iOS, iPadOS, macOS) and powered by AI recommendations.
-
-### 🎯 Core Philosophy
-
-Life is multidimensional. Axis organizes your habits into 6 fundamental life domains:
-
-1. **Health** 💚 - Physical, mental, emotional, and spiritual well-being
-2. **Wealth** 💰 - Financial stability and mindset
-3. **Relationships** 💖 - Connections with self and others
-4. **Career** 💼 - Purpose and professional growth
-5. **Growth** 🌱 - Learning, hobbies, and self-improvement
-6. **Spirituality** ✨ - Meaning, impact, and higher purpose
+**Stack:** Dart · Flutter · Provider · go_router · Firebase Auth · Cloud Firestore · Cloud Functions (Node.js) · OpenAI API
 
 ## Features
 
-### 📱 Multi-Platform Support
-- **iPhone**: Optimized mobile experience with bottom navigation
-- **iPad**: Tablet layout with side navigation and multi-column views
-- **MacBook**: Desktop-class app with native macOS integration
+- **Home dashboard:** today's tasks, a habit snapshot, current streaks, a mini calendar, and the latest AI insight
+- **Habits by life area:** Soul and Spirit, Health and Energy, Family and Relationships, Work and Calling, and Money and Wealth, with streaks and charts
+- **Tasks and schedules:** tasks with due dates, time estimates, and categories, plus daily, weekly, biweekly, or monthly recurring schedules shown on a calendar
+- **Daily reflection:** a journal entry with mood and energy (1–10), gratitude, wins, challenges, and tags
+- **AI feedback:** Cloud Functions send a user's reflections to OpenAI (`gpt-4o-mini`) every night and on request, then save a daily summary and the next day's prompt
+- **Reminders:** local notifications for scheduled items, plus light and dark themes
 
-### 🏠 Home Dashboard
-- Active habit streaks with visual indicators
-- Today's task preview
-- Mini calendar with event markers
-- AI-powered daily recommendations
-- Domain balance overview
+## How it works
 
-### 📅 Calendar
-- Monthly and weekly views
-- Task and habit scheduling
-- Event creation and management
-- Day detail view with all activities
-
-### ✅ Task Management
-- Create, edit, and complete tasks
-- Filter by status (Today, Upcoming, Completed)
-- Priority levels (Low, Medium, High)
-- Domain categorization
-- Due date tracking
-
-### 🔄 Habit Tracking
-- Organize habits by 6 life domains
-- Daily, weekly, or custom frequency
-- Streak tracking and visualization
-- Quick check-in from home screen
-- Progress analytics
-
-### 📔 Daily Reflection
-- Guided journaling prompts
-- Mood and energy tracking (1-10 scale)
-- Gratitude, wins, and challenges
-- Tag system for easy retrieval
-- Timeline view of past reflections
-
-### 🤖 AI Recommendations
-- Analyzes 14 days of behavior patterns
-- Identifies neglected life domains
-- Prioritizes habits (Critical, High, Medium)
-- Suggests optimal task limits
-- Provides actionable insights
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Flutter Application                       │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │         Presentation (Screens & Widgets)              │  │
-│  └───────────────────────────────────────────────────────┘  │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │     Business Logic (Providers - State Management)     │  │
-│  └───────────────────────────────────────────────────────┘  │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │        Data Layer (Models & Repositories)             │  │
-│  └───────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-        ┌──────────────────────────────────────┐
-        │      Cloud Firestore (Database)      │
-        └──────────────────────────────────────┘
-                           │
-                           ▼
-        ┌──────────────────────────────────────┐
-        │   Python AI Backend (FastAPI)        │
-        │   - Recommendation Engine             │
-        │   - Pattern Analysis                  │
-        │   - Domain Balancing                  │
-        └──────────────────────────────────────┘
+```mermaid
+flowchart LR
+    A[Flutter app<br/>screens, providers, repositories] <--> B[(Cloud Firestore)]
+    A --> C[Firebase Auth]
+    D[Cloud Functions<br/>nightly and on request] --> B
+    D --> E[OpenAI API]
 ```
 
-### Tech Stack
+The app reads and writes habits, tasks, schedules, and reflections in Firestore through repository classes, and Provider keeps the screens in sync. The Cloud Functions hold the OpenAI key, so it never ships inside the app.
 
-**Frontend:**
-- Flutter 3.16+ (Dart)
-- Provider for state management
-- Go Router for navigation
-- Firebase SDK (Auth, Firestore)
+## Run it locally
 
-**Backend:**
-- Python 3.11+ with FastAPI
-- Google Cloud Firestore
-- Pydantic for data validation
-
-**Infrastructure:**
-- Firebase Authentication
-- Cloud Firestore (NoSQL database)
-- Cloud Run (Backend hosting)
-- Firebase Analytics
-
-## Quick Start
-
-### Prerequisites
-- Flutter SDK 3.16+
-- Xcode 15+ (for iOS/macOS)
-- Python 3.11+
-- Firebase account
-
-### 1. Clone the Repository
+Requires the Flutter SDK (Dart 3), Xcode, a Firebase project, the [Firebase CLI](https://firebase.google.com/docs/cli), and the [FlutterFire CLI](https://firebase.google.com/docs/flutter/setup).
 
 ```bash
-git clone https://github.com/yourusername/axis.git
-cd axis
-```
-
-### 2. Set Up Firebase
-
-See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed Firebase configuration.
-
-### 3. Install Dependencies
-
-**Flutter:**
-```bash
-cd axis
+git clone https://github.com/Diggy-DB/Axis.git
+cd Axis/axis
+cp .env.example .env
+flutterfire configure        # writes lib/firebase_options.dart for your Firebase project (git-ignored)
 flutter pub get
+flutter run -d macos         # or pick an iOS simulator
 ```
 
-**Python Backend:**
-```bash
-cd ai_backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 4. Configure
-
-- Add `GoogleService-Info.plist` to iOS and macOS projects
-- Update `firebase_options.dart` with your Firebase config
-- Set Firestore credentials for backend
-
-### 5. Run
-
-**Start Backend:**
-```bash
-cd ai_backend
-uvicorn main:app --reload
-```
-
-**Run Flutter App:**
-```bash
-cd axis
-flutter run -d macos  # or ios
-```
-
-## Project Structure
-
-```
-axis/
-├── lib/
-│   ├── main.dart                    # App entry point
-│   ├── app.dart                     # App widget
-│   ├── core/
-│   │   ├── constants/               # Enums, colors, constants
-│   │   ├── theme/                   # Light/dark themes
-│   │   ├── router/                  # Navigation
-│   │   └── utils/                   # Helper functions
-│   ├── models/                      # Data models
-│   │   ├── user.dart
-│   │   ├── habit.dart
-│   │   ├── task.dart
-│   │   ├── reflection.dart
-│   │   └── recommendation.dart
-│   ├── repositories/                # Data access layer
-│   │   ├── habit_repository.dart
-│   │   ├── task_repository.dart
-│   │   └── reflection_repository.dart
-│   ├── services/                    # External services
-│   │   ├── ai_service.dart
-│   │   └── firestore_service.dart
-│   ├── providers/                   # State management
-│   │   ├── auth_provider.dart
-│   │   ├── habit_provider.dart
-│   │   ├── task_provider.dart
-│   │   ├── reflection_provider.dart
-│   │   └── ai_provider.dart
-│   ├── screens/                     # Main screens
-│   │   ├── home/
-│   │   ├── calendar/
-│   │   ├── tasks/
-│   │   ├── habits/
-│   │   └── reflection/
-│   └── widgets/                     # Reusable components
-│       ├── navigation/
-│       ├── cards/
-│       └── forms/
-│
-├── ai_backend/
-│   ├── main.py                      # FastAPI app
-│   ├── models/                      # Pydantic models
-│   ├── services/                    # Business logic
-│   │   ├── recommendation_engine.py
-│   │   ├── pattern_analyzer.py
-│   │   ├── domain_balancer.py
-│   │   └── firestore_client.py
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── README.md
-│
-├── test/                            # Tests
-├── pubspec.yaml                     # Flutter dependencies
-├── ARCHITECTURE.md                  # Architecture details
-├── SETUP_GUIDE.md                   # Setup instructions
-└── README.md                        # This file
-```
-
-## Documentation
-
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design and architecture decisions
-- **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Detailed setup and configuration
-- **[IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)** - Code patterns and examples
-- **[ai_backend/README.md](ai_backend/README.md)** - Backend API documentation
-
-## Screenshots
-
-<div align="center">
-
-| Home Dashboard | Habits by Domain | Reflection |
-|----------------|------------------|------------|
-| ![Home](assets/screenshots/home.png) | ![Habits](assets/screenshots/habits.png) | ![Reflection](assets/screenshots/reflection.png) |
-
-</div>
-
-## Development
-
-### Running Tests
+To deploy the Firestore rules and the AI functions (Node.js 20):
 
 ```bash
-# Flutter tests
-cd axis
-flutter test
-
-# Python tests
-cd ai_backend
-pytest
+cd functions && npm install && cd ..
+firebase functions:secrets:set OPENAI_API_KEY
+firebase deploy --only firestore,functions
 ```
 
-### Code Style
+## Project structure
 
-**Flutter:**
-```bash
-flutter analyze
-flutter format lib/
+```
+axis/lib/
+  core/            config, constants, router, theme
+  models/          habits, tasks, schedules, reflections, daily summaries
+  providers/       app state (Provider)
+  repositories/    Firestore reads and writes
+  screens/         home, habits, tasks, calendar, reflection, statistics, settings
+  services/        notifications and AI clients
+  widgets/         dashboard sections and shared UI
+functions/         Cloud Functions: nightly and on-demand AI insights
+firestore.rules    security rules
+ai_backend/        an early FastAPI recommendation service (not connected to the app yet)
 ```
 
-**Python:**
-```bash
-black .
-flake8
-```
+## Status and next steps
 
-### Building for Production
-
-**iOS:**
-```bash
-flutter build ios --release
-```
-
-**macOS:**
-```bash
-flutter build macos --release
-```
-
-**Backend:**
-```bash
-docker build -t axis-ai-backend .
-gcloud run deploy axis-ai-backend --image gcr.io/PROJECT_ID/axis-ai-backend
-```
-
-## Roadmap
-
-### v1.0 (Current)
-- ✅ Core habit tracking
-- ✅ Task management
-- ✅ Daily reflection
-- ✅ AI recommendations (rule-based)
-- ✅ Multi-platform support
-
-### v1.1 (Planned)
-- [ ] Social features (share progress)
-- [ ] Apple Watch companion app
-- [ ] Offline mode improvements
-- [ ] Backup/export functionality
-- [ ] Custom themes
-
-### v2.0 (Future)
-- [ ] ML-powered recommendations
-- [ ] Collaborative habits (with friends)
-- [ ] Integration with health apps (Apple Health, Google Fit)
-- [ ] Advanced analytics and insights
-- [ ] Habit templates and marketplace
-
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-### Areas We Need Help
-- UI/UX improvements
-- Additional AI recommendation algorithms
-- Localization (i18n)
-- Testing and QA
-- Documentation
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Built with [Flutter](https://flutter.dev)
-- Backend powered by [FastAPI](https://fastapi.tiangolo.com)
-- Database by [Firebase](https://firebase.google.com)
-- Icons by [Font Awesome](https://fontawesome.com)
-
-## Contact
-
-- **GitHub Issues**: For bug reports and feature requests
-- **Email**: support@axis-app.com
-- **Twitter**: [@AxisApp](https://twitter.com/axisapp)
+- **Tests:** only a placeholder test so far. Widget tests for the main screens are next.
+- **Recommendation service:** `ai_backend/` isn't called by the app yet. The plan is to merge its pattern analysis into the Cloud Functions.
 
 ---
 
-<div align="center">
-  
-**Made with ❤️ for anyone seeking balance in life**
-
-[⬆ back to top](#axis---your-life-operating-system)
-
-</div>
+<sub>Built by [Delger Byambasukh](https://github.com/Diggy-DB) · [Portfolio](https://diggy-db.github.io) · [Write-up](https://diggy-db.github.io/projects/axis/)</sub>
